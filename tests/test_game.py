@@ -22,6 +22,70 @@ from utils.vypis import barva, hlavicka, vytiskni_volbu
 
 
 class HraTesty(unittest.TestCase):
+    def test_interakce_zobrazuji_kategorie_a_prehled_ucinku(self):
+        from game.interakce import zobraz_interakce
+
+        hra = Hra()
+        otrok = Otrokyně("Mira", vek=25, duvera=60)
+        vystup = io.StringIO()
+        with patch("builtins.input", side_effect=["1", "0", "0"]), redirect_stdout(vystup):
+            zobraz_interakce(otrok, hra.hrac)
+
+        text = vystup.getvalue()
+        for kategorie in (
+            "Péče a rozhovor", "Společný čas", "Blízkost",
+            "Výcvik a disciplína", "Zkoušky a rituály",
+        ):
+            self.assertIn(kategorie, text)
+        self.assertIn("Účinky:", text)
+        self.assertIn("Cena:", text)
+
+    def test_odmitnuta_blizkost_nestoji_energii_a_erotika_vyzaduje_dospelost(self):
+        from game.interakce import proved_interakci
+
+        hra = Hra()
+        otrok = Otrokyně("Mira", vek=25, duvera=50)
+        energie_pred = hra.hrac.sex_energy
+        with patch("builtins.input", return_value="n"), redirect_stdout(io.StringIO()):
+            self.assertFalse(proved_interakci(otrok, hra.hrac, "neznost"))
+        self.assertEqual(hra.hrac.sex_energy, energie_pred)
+        self.assertEqual(otrok.historie_voleb[-1]["typ"], "intimita_odmítnuto")
+
+        otrok.vek = 17
+        with patch("builtins.input") as vstup, redirect_stdout(io.StringIO()):
+            self.assertFalse(proved_interakci(otrok, hra.hrac, "forced_orgasm"))
+        vstup.assert_not_called()
+        self.assertEqual(hra.hrac.sex_energy, energie_pred)
+
+    def test_hromadne_interakce_skryvaji_erotiku_a_vynechaji_pronajate(self):
+        from game.interakce import zobraz_hromadne_interakce
+
+        hra = Hra()
+        volna = Otrokyně("Mira", duvera=50)
+        pronajata = Otrokyně("Nela", duvera=50)
+        pronajata.na_najmu = True
+        vystup = io.StringIO()
+        with patch("builtins.input", return_value="0"), redirect_stdout(vystup):
+            zobraz_hromadne_interakce([volna, pronajata], hra.hrac)
+
+        text = vystup.getvalue()
+        self.assertIn("Počet způsobilých postav: 1", text)
+        self.assertIn("budou vynechány: 1", text)
+        self.assertNotIn("Něžnost", text)
+        self.assertNotIn("Forced orgasm", text)
+
+    def test_pronajata_postava_nemuze_otevrit_podmenu_interakci(self):
+        from game.interakce import zobraz_interakce
+
+        hra = Hra()
+        otrok = Otrokyně("Mira")
+        otrok.na_najmu = True
+        with patch("builtins.input", side_effect=["98", "", "0"]), \
+             patch("game.drogy.menu_drog") as menu_drog, \
+             redirect_stdout(io.StringIO()):
+            zobraz_interakce(otrok, hra.hrac)
+        menu_drog.assert_not_called()
+
     def test_nova_hra_ma_dve_dospele_postavy_a_defaulty(self):
         hra = nova_hra()
         self.assertEqual(len(hra.harem.otrokyne), 2)

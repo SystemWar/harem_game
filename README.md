@@ -193,16 +193,15 @@ diplomatka posiluje kladné diplomatické zisky, ochranitelka přidává obranu 
 bojová společnice a umělkyně zvyšuje denní příjem harému. Schopnosti mají
 podmínky důvěry a nevztahují se na členky, které jsou právě na nájmu.
 
-### Hlavní kategorie interakcí
+### Kategorie interakcí
 
-| Kategorie | Příklady akcí |
-|-----------|--------------|
-| **Základní** | Rozkaz, Výcvik, Pokárání, Chvála |
-| **Intimní** | Políbení, Objetí, Masáž, Olejová masáž celého těla |
-| **Dominantní** | Svazování, Bičování, Hypnotický pohled, Znacka dominia |
-| **Psychologické** | Hypnóza, Zkouška oddanosti, Iluze svobody |
-| **Taneční** | Soukromý tanec, Rituální tanec stínů |
-| **Speciální** | Alchymická proměna, Rituál temné přísahy |
+Menu interakcí třídí možnosti do kategorií Péče a rozhovor, Společný čas,
+Blízkost, Výcvik a disciplína a Zkoušky a rituály. U každé akce předem ukazuje
+účinky, cenu energie a případné podmínky či riziko. Erotické akce jsou pouze
+pro dospělé; u dobrovolných intimních aktivit je nutná důvěra a výslovný souhlas.
+Odmítnutí nic nestojí. Hromadná interakce erotické možnosti nenabízí a vynechá
+postavy na nájmu nebo mimo provoz. Během nájmu nejsou dostupná ani zvláštní
+podmenu interakcí.
 
 ### Podání drog (podmenu Drogy)
 

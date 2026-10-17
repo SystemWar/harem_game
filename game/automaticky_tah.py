@@ -22,7 +22,10 @@ NIZKA_TEMNA_ENERGIE = 25
 _BEZPECNE_INTERAKCE = {
     a["id"]: a
     for a in INTERAKCE
-    if a.get("typ") == "odmena" and a.get("riziko", 1) == 0
+    if a.get("typ") == "odmena"
+    and a.get("riziko", 1) == 0
+    and not a.get("intimni")
+    and not a.get("sexualni")
 }
 _DOBIJECE = {
     "hostinec": (hostinec, 35, 28, 8, "Hostinec"),
@@ -188,8 +191,8 @@ def naplanuj_automaticky_tah(hra):
         zlato -= lazne_budova.cena
 
     volna = _volna_postava(hra)
-    if volna and "neznost" in _BEZPECNE_INTERAKCE:
-        akce = _BEZPECNE_INTERAKCE["neznost"]
+    if volna and "rozhovor_od_srdce" in _BEZPECNE_INTERAKCE:
+        akce = _BEZPECNE_INTERAKCE["rozhovor_od_srdce"]
         cena_sex = akce.get("cena_energie", 0)
         cena_temna = akce.get("cena_temnoty", 0)
         if (
@@ -200,7 +203,7 @@ def naplanuj_automaticky_tah(hra):
                 AutomatickaAkce(
                     "interakce",
                     akce["nazev"],
-                    "bezpečná interakce bez rizika",
+                    "bezpečný rozhovor bez rizika",
                     cil=volna.jmeno,
                     cena_sex=cena_sex,
                     cena_temna=cena_temna,
@@ -321,7 +324,7 @@ def proved_automaticky_tah(hra, plan):
             ):
                 duvod = "po interakci by nezůstala energetická rezerva"
             else:
-                uspech = proved_interakci(otrok, hra.hrac, "neznost")
+                uspech = proved_interakci(otrok, hra.hrac, "rozhovor_od_srdce")
         elif akce.typ == "pece":
             otrok = _najdi_postavu(hra, akce.cil)
             if otrok is None:

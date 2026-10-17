@@ -12,6 +12,35 @@ def proved_interakci(otrok: Otrokyně, hrac: Hrac, akce_id: str):
         tisk_chyba("Neznámá akce.")
         return False
 
+    if getattr(otrok, "na_najmu", False):
+        tisk_chyba("Interakce s ní počkají, dokud neskončí její pracovní závazek.")
+        return False
+
+    if akce.get("intimni"):
+        if getattr(otrok, "vek", 0) < 18:
+            tisk_chyba("Intimní interakce jsou dostupné pouze dospělým postavám.")
+            return False
+        min_duvera = akce.get("min_duvera", 0)
+        if getattr(otrok, "duvera", 0) < min_duvera:
+            tisk_info(
+                f"{otrok.jmeno} zatím nemá dost důvěry pro tuto blízkost "
+                f"(potřebuje {min_duvera}/100)."
+            )
+            otrok.zaznamenej_volbu(
+                "intimita_odmítnuto", akce["nazev"], getattr(hrac, "den", 0)
+            )
+            return False
+        souhlas = input(
+            f"Zeptat se {otrok.jmeno}, zda s tím souhlasí? (a/n): "
+        ).strip().lower()
+        if souhlas not in ("a", "ano"):
+            otrok.zaznamenej_volbu(
+                "intimita_odmítnuto", f"Odmítla: {akce['nazev']}",
+                getattr(hrac, "den", 0),
+            )
+            tisk_info(f"{otrok.jmeno} odmítla. Její rozhodnutí respektuješ.")
+            return False
+
     if hrac.sex_energy < akce.get("cena_energie", 0):
         tisk_chyba("Nedostatek sexuální energie.")
         return False
@@ -49,7 +78,9 @@ def proved_interakci(otrok: Otrokyně, hrac: Hrac, akce_id: str):
         tisk_chyba("Stala se nepříjemná událost!")
 
     otrok.aktualizuj_fazi()
-    otrok.zaznamenej_volbu("interakce", akce["nazev"])
+    otrok.zaznamenej_volbu(
+        "interakce", akce["nazev"], getattr(hrac, "den", 0)
+    )
     tisk_ok(f"Provedeno: {akce['nazev']} (charakter: {nazev_charakteru(getattr(otrok, 'charakter', 'subka'))})")
     try:
         from game.ai_dialog import vypis_dialog, typ_z_akce
@@ -69,8 +100,27 @@ def zobraz_interakce(otrok, hrac, nastaveni=None):
         hlavicka(f'Interakce s {otrok.jmeno}')
         print(f"HP: {otrok.hp} | Touha: {otrok.touha} | Submisivita: {otrok.submisivita}")
         print(f"Energie: {hrac.sex_energy} | Temná energie: {hrac.dark_energy}\n")
-        for i, akce in enumerate(INTERAKCE, 1):
-            print(f"{i}) {akce['nazev']} (E:{akce.get('cena_energie',0)} T:{akce.get('cena_temnoty',0)})")
+        dostupne = [
+            akce for akce in INTERAKCE
+            if not akce.get("intimni")
+            or (getattr(otrok, "vek", 0) >= 18 and not getattr(otrok, "na_najmu", False))
+        ]
+        kategorie = None
+        for i, akce in enumerate(dostupne, 1):
+            nova_kategorie = akce.get("kategorie", akce.get("typ", "Ostatní"))
+            if nova_kategorie != kategorie:
+                kategorie = nova_kategorie
+                print(f"\n── {kategorie} ──")
+            duvera_txt = (
+                f" | důvěra {akce['min_duvera']}+"
+                if akce.get("intimni") else ""
+            )
+            souhlas_txt = " | souhlas" if akce.get("intimni") else ""
+            print(
+                f"{i}) {akce['nazev']} "
+                f"(E:{akce.get('cena_energie',0)} "
+                f"T:{akce.get('cena_temnoty',0)}{duvera_txt}{souhlas_txt})"
+            )
         vytiskni_volbu('97', 'Bojová společnice (doprovod do arény a dungeonů)')
         vytiskni_volbu('98', 'Drogy')
         vytiskni_volbu('99', 'Tresty/odměny')
@@ -111,8 +161,8 @@ def zobraz_interakce(otrok, hrac, nastaveni=None):
         else:
             try:
                 idx = int(volba) - 1
-                if 0 <= idx < len(INTERAKCE):
-                    proved_interakci(otrok, hrac, INTERAKCE[idx]["id"])
+                if 0 <= idx < len(dostupne):
+                    proved_interakci(otrok, hrac, dostupne[idx]["id"])
                 else:
                     tisk_chyba("Špatná volba.")
             except ValueError:
@@ -129,7 +179,8 @@ def zobraz_hromadne_interakce(otrokyne, hrac):
         clear()
         hlavicka('Hromadná interakce se všemi otrokyněmi')
         print(f"Počet postav: {len(otrokyne)}")
-        for i, akce in enumerate(INTERAKCE, 1):
+        dostupne = [akce for akce in INTERAKCE if not akce.get("intimni")]
+        for i, akce in enumerate(dostupne, 1):
             print(
                 f"{i}) {akce['nazev']} "
                 f"(E:{akce.get('cena_energie', 0)} "
@@ -145,12 +196,12 @@ def zobraz_hromadne_interakce(otrokyne, hrac):
             tisk_chyba("Zadej číslo.")
             input("Enter...")
             continue
-        if not 0 <= index < len(INTERAKCE):
+        if not 0 <= index < len(dostupne):
             tisk_chyba("Špatná volba.")
             input("Enter...")
             continue
 
-        akce = INTERAKCE[index]
+        akce = dostupne[index]
         cena_energie = akce.get("cena_energie", 0) * len(otrokyne)
         cena_temnoty = akce.get("cena_temnoty", 0) * len(otrokyne)
         if hrac.sex_energy < cena_energie or hrac.dark_energy < cena_temnoty:

@@ -114,6 +114,13 @@ i body romance všech otrokyň na 100. Režim je
 uložený v save a je standardně vypnutý.
 Náhodné události při odpočinku se vybírají podle místa, roční doby, stavu harému
 a hrozeb ve světě; jejich historii najdeš v kalendáři (`32`).
+Po odpočinku se navíc každý den nabídnou dvě události s volbou následků:
+jedna příběhová linka a jedna menší samostatná situace. Linky mohou pokračovat
+následující den:
+inkvizice sleduje stopu dominia, kupecká karavana nabídne dohodu a rival může
+vyslat ultimátum. Dostupné možnosti ukazují cenu před potvrzením; nevyřešené
+pokračování i historie se ukládají do save a událost lze také nechat bez zásahu.
+Původní náhodná událost světa si zachovává svou vlastní šanci na spuštění.
 
 ---
 

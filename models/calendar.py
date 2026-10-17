@@ -11,6 +11,8 @@ class CalendarSystem:
     den: int = 1
     udalosti: list = field(default_factory=list)
     posledni_udalost: str = ""
+    aktivni_pribehova_linka: dict = field(default_factory=dict)
+    den_posledni_pribehove_udalosti: int = 0
 
     @property
     def sezona(self):
@@ -42,6 +44,8 @@ class CalendarSystem:
             "den": self.den,
             "udalosti": self.udalosti,
             "posledni_udalost": self.posledni_udalost,
+            "aktivni_pribehova_linka": self.aktivni_pribehova_linka,
+            "den_posledni_pribehove_udalosti": self.den_posledni_pribehove_udalosti,
         }
 
     @classmethod
@@ -53,9 +57,16 @@ class CalendarSystem:
         except (TypeError, ValueError):
             den = max(1, int(fallback_den))
         udalosti = data.get("udalosti", [])
+        linka = data.get("aktivni_pribehova_linka", {})
+        try:
+            den_udalosti = max(0, int(data.get("den_posledni_pribehove_udalosti", 0)))
+        except (TypeError, ValueError):
+            den_udalosti = 0
         return cls(
             den=den,
             udalosti=udalosti[-30:] if isinstance(udalosti, list) else [],
             posledni_udalost=data.get("posledni_udalost", "")
             if isinstance(data.get("posledni_udalost", ""), str) else "",
+            aktivni_pribehova_linka=dict(linka) if isinstance(linka, dict) else {},
+            den_posledni_pribehove_udalosti=den_udalosti,
         )

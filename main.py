@@ -20,6 +20,7 @@ from game.energie import zobraz_menu as menu_energie
 from game.obchod import obchod
 from game.drazba import drazba_otrokyn
 from game.budovy import spravovat_budovy
+from game.denni_udalosti import spust_denni_udalost
 from game.udalosti import spust_nahodnou_udalost
 from game.statistiky import zobraz_statistiky
 from game.souboje import Souboj
@@ -533,7 +534,10 @@ def _obsluz_volbu_hlavniho_menu(
         _pockej_na_enter()
     elif volba == "12":
         odpocinek(hra)
+        _bezpecne_volba("Událost dne", spust_denni_udalost, hra)
         _bezpecne_volba("Náhodná událost", spust_nahodnou_udalost, hra)
+        from game.save_load import uloz_autosave
+        _bezpecne_volba("Autosave události", uloz_autosave, hra)
     elif volba == "13":
         obchod(hra)
     elif volba == "14":

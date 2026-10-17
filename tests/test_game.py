@@ -1937,6 +1937,64 @@ class HraTesty(unittest.TestCase):
         self.assertIn("den 4: Večer světel", vystup.getvalue())
         self.assertEqual(hra.to_dict(), stav_pred)
 
+    def test_denni_pribehova_udalost_nabidne_volbu_a_ulozi_pokracovani(self):
+        from game.denni_udalosti import SAMOSTATNE_UDALOSTI, spust_denni_udalost
+
+        hra = Hra()
+        gold_pred = hra.hrac.gold
+
+        def vyber_rivala(moznosti, weights, k):
+            return [next(polozka for polozka in moznosti if polozka[0] == "rivalni_posel")]
+
+        with patch("game.denni_udalosti.random.choices", side_effect=vyber_rivala), \
+             patch(
+                 "game.denni_udalosti.random.choice",
+                 return_value=next(
+                     udalost for udalost in SAMOSTATNE_UDALOSTI
+                     if udalost["id"] == "ztracena_mapa"
+                 ),
+             ), \
+             patch("builtins.input", side_effect=["1", "1"]), \
+             redirect_stdout(io.StringIO()):
+            self.assertTrue(spust_denni_udalost(hra))
+
+        self.assertEqual(hra.hrac.gold, gold_pred - 40)
+        self.assertEqual(
+            hra.kalendar.aktivni_pribehova_linka,
+            {"id": "rivalni_posel", "etapa": 1, "vetv": "jednani"},
+        )
+        self.assertEqual(hra.kalendar.udalosti[-1]["typ"], "denni_drobnost")
+        self.assertEqual(hra.kalendar.udalosti[-2]["typ"], "pribehova")
+        nactena = Hra.from_dict(hra.to_dict())
+        self.assertEqual(
+            nactena.kalendar.aktivni_pribehova_linka,
+            hra.kalendar.aktivni_pribehova_linka,
+        )
+
+    def test_pokracovani_denni_linky_respektuje_vetev_a_lze_spustit_jednou_za_den(self):
+        from game.denni_udalosti import spust_denni_udalost
+
+        hra = Hra()
+        hra.kalendar.aktivni_pribehova_linka = {
+            "id": "rivalni_posel",
+            "etapa": 1,
+            "vetv": "jednani",
+        }
+        hra.hrac.den = 2
+        hra.kalendar.den = 2
+        reputace_pred = hra.hrac.reputace_mesta
+        vystup = io.StringIO()
+
+        with redirect_stdout(vystup):
+            self.assertTrue(spust_denni_udalost(hra))
+            gold_po_udalosti = hra.hrac.gold
+            self.assertFalse(spust_denni_udalost(hra))
+
+        self.assertEqual(hra.hrac.reputace_mesta, reputace_pred + 2)
+        self.assertEqual(hra.hrac.gold, gold_po_udalosti)
+        self.assertFalse(hra.kalendar.aktivni_pribehova_linka)
+        self.assertIn("Odezva rivala", vystup.getvalue())
+
     def test_prvni_npc_ukol_neodemkne_achievement_retezce(self):
         hra = Hra()
         hra.svet.vztahy_npc["mira"] = 100

@@ -72,6 +72,66 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(otrok.strach, 15)
         self.assertEqual(otrok.historie_voleb[-1]["typ"], "rozhovor")
 
+    def test_intimni_chvile_vyžaduji_souhlas_a_aplikuji_vztahove_efekty(self):
+        from game.harem_interakce import _osobni_akce
+
+        hra = Hra()
+        otrok = Otrokyně("Mira", vek=25, duvera=60, romance_body=20)
+        hra.harem.pridat(otrok)
+        energie_pred = hra.hrac.sex_energy
+
+        with patch("builtins.input", side_effect=["15", "4", "a", ""]), redirect_stdout(io.StringIO()):
+            _osobni_akce(hra, otrok)
+
+        self.assertEqual(hra.hrac.sex_energy, energie_pred - 14)
+        self.assertEqual(otrok.historie_voleb[-1]["typ"], "intimita")
+        self.assertEqual(otrok.historie_voleb[-1]["volba"], "Vášnivá noc plná odevzdání")
+        self.assertGreater(otrok.duvera, 60)
+        self.assertGreater(otrok.romance_body, 20)
+
+    def test_intimni_chvile_respektuji_odmitnuti_a_prah_duvery(self):
+        from game.intimita_rozsireni import nabidnout_intimni_chvili
+
+        hra = Hra()
+        otrok = Otrokyně("Nela", vek=25, duvera=10)
+        hra.harem.pridat(otrok)
+        energie_pred = hra.hrac.sex_energy
+
+        with patch("builtins.input", side_effect=["2", ""]), redirect_stdout(io.StringIO()):
+            uspech = nabidnout_intimni_chvili(hra, otrok)
+
+        self.assertFalse(uspech)
+        self.assertEqual(hra.hrac.sex_energy, energie_pred)
+        self.assertEqual(otrok.romance_body, 0)
+        self.assertEqual(otrok.historie_voleb[-1]["typ"], "intimita_odmítnuto")
+
+        otrok.duvera = 60
+        with patch("builtins.input", side_effect=["2", "n", ""]), redirect_stdout(io.StringIO()):
+            uspech = nabidnout_intimni_chvili(hra, otrok)
+
+        self.assertFalse(uspech)
+        self.assertEqual(hra.hrac.sex_energy, energie_pred)
+        self.assertEqual(otrok.romance_body, 0)
+
+    def test_intimni_chvile_nejsou_dostupne_maloletým_nebo_pri_najmu(self):
+        from game.intimita_rozsireni import nabidnout_intimni_chvili
+
+        hra = Hra()
+        otrok = Otrokyně("Nela", vek=25, duvera=100, na_najmu=False)
+        otrok.vek = 17
+        hra.harem.pridat(otrok)
+        energie_pred = hra.hrac.sex_energy
+
+        with patch("builtins.input", return_value=""), redirect_stdout(io.StringIO()):
+            self.assertFalse(nabidnout_intimni_chvili(hra, otrok))
+        self.assertEqual(hra.hrac.sex_energy, energie_pred)
+
+        otrok.vek = 25
+        otrok.na_najmu = True
+        with patch("builtins.input", return_value=""), redirect_stdout(io.StringIO()):
+            self.assertFalse(nabidnout_intimni_chvili(hra, otrok))
+        self.assertEqual(hra.hrac.sex_energy, energie_pred)
+
     def test_osobni_pribeh_a_statistiky_se_ukladaji_a_vykresli_diary(self):
         from game.osobni_pribehy import pokracuj_v_pribehu, zobraz_denik_postavy
         from game.harem_interakce import zobraz_graf_statistik

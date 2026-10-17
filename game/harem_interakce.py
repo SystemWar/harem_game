@@ -64,6 +64,7 @@ def _osobni_akce(hra, otrok):
     vytiskni_volbu('12', 'Pokračovat v jejím osobním příběhu')
     vytiskni_volbu('13', 'Otevřít její osobní deník')
     vytiskni_volbu('14', 'Graf vývoje jejích statistik')
+    vytiskni_volbu('15', 'Smyslné chvíle a intimita (dospělé postavy, se souhlasem)')
     vytiskni_volbu('0', 'Zpět')
     volba = input("> ").strip()
     if volba == "1":
@@ -207,6 +208,9 @@ def _osobni_akce(hra, otrok):
         zobraz_denik_postavy(otrok)
     elif volba == "14":
         zobraz_graf_statistik(otrok)
+    elif volba == "15":
+        from game.intimita_rozsireni import nabidnout_intimni_chvili
+        nabidnout_intimni_chvili(hra, otrok)
     elif volba != "0":
         tisk_chyba("Neplatná volba.")
     if volba != "4":

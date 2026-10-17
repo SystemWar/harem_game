@@ -78,6 +78,24 @@ PEVNOSTNI_BUDOVY = {
         "cena_zelezo": 5,
         "popis": "Pěstuje obilí a chová dobytek. Denní produkce: +30 zásob jídla za úroveň.",
     },
+    "trziste": {
+        "nazev": "Tržiště & kupecký cech",
+        "kategorie": "suroviny",
+        "cena_zlato": 230,
+        "cena_drevo": 45,
+        "cena_kamen": 35,
+        "cena_zelezo": 15,
+        "popis": "Přivádí kupce do dominia. Denní tržba: +70 zlata za úroveň; dohlížitelka ji dál zvyšuje podle důvěry.",
+    },
+    "celnice": {
+        "nazev": "Celní dům & vážnice",
+        "kategorie": "suroviny",
+        "cena_zlato": 310,
+        "cena_drevo": 35,
+        "cena_kamen": 70,
+        "cena_zelezo": 30,
+        "popis": "Zajišťuje bezpečný výběr cla. Zvyšuje denní výnos tržiště a obchodních smluv o 20 % za úroveň.",
+    },
     "hradby": {
         "nazev": "Masivní kamenné hradby",
         "kategorie": "obrana",
@@ -143,6 +161,27 @@ PEVNOSTNI_BUDOVY = {
     },
 }
 
+OBCHODNI_SMLOUVY = {
+    "drevo": {
+        "nazev": "Smlouva s loděnicemi",
+        "surovina": "drevo",
+        "mnozstvi": 30,
+        "zlato": 95,
+    },
+    "kamen": {
+        "nazev": "Smlouva se staviteli",
+        "surovina": "kamen",
+        "mnozstvi": 25,
+        "zlato": 105,
+    },
+    "zelezo": {
+        "nazev": "Smlouva se zbrojíři",
+        "surovina": "zelezo",
+        "mnozstvi": 15,
+        "zlato": 120,
+    },
+}
+
 
 @dataclass
 class FortressDevelopment:
@@ -156,6 +195,7 @@ class FortressDevelopment:
     rozsireni: List[str] = field(default_factory=list)
     pracovnici: Dict[str, str] = field(default_factory=dict)  # budova_id -> jmeno_otrokine
     danova_politika: str = "vyvazena"               # "laskava", "vyvazena", "kruta"
+    obchodni_smlouva: str = ""
     karavany_aktivni: List[Dict[str, Any]] = field(default_factory=list)
     arena_rank: int = 0                            # 0: Rekrut, 1: Rváč, 2: Gladiátor, 3: Šampion, 4: Bůh arény
     bojova_partnerka: str = ""                     # jméno zvolené otrokyně do soubojů
@@ -221,6 +261,14 @@ class FortressDevelopment:
         self.budovy[budova] = self.budovy.get(budova, 0) + 1
         return True
 
+    def nastav_obchodni_smlouvu(self, smlouva):
+        if self.budovy.get("trziste", 0) <= 0:
+            return False, "Nejdřív postav Tržiště & kupecký cech."
+        if smlouva not in OBCHODNI_SMLOUVY:
+            return False, "Neznámá obchodní smlouva."
+        self.obchodni_smlouva = smlouva
+        return True, f"Aktivní smlouva: {OBCHODNI_SMLOUVY[smlouva]['nazev']}."
+
     def celkova_obrana_pevnosti(self):
         obrana = self.budovy.get("hradby", 0) * 35
         obrana += self.budovy.get("strazni_vez", 0) * 25
@@ -248,6 +296,7 @@ class FortressDevelopment:
         jidlo_zisk = self.budovy.get("statek", 0) * 30
         temno_zisk = self.budovy.get("oltar_stinu", 0) * 4
         krystaly_zisk = self.budovy.get("oltar_stinu", 0) * 2
+        obchod_zisk = self.budovy.get("trziste", 0) * 70
 
         # Produkce ze skleníku a alchymistické laboratoře
         sklenik_lvl = self.budovy.get("bylinkovy_sklenik", 0)
@@ -302,12 +351,54 @@ class FortressDevelopment:
                     zpravy.append(f"Zlodějka {otrok.jmeno} našla v dole zlatou žílu (+35 🪙)!")
             elif b_id == "statek":
                 jidlo_zisk += 20
+            elif b_id == "trziste":
+                obchod_bonus = 25 + max(0, int(getattr(otrok, "duvera", 0)) // 10)
+                if char == "diplomatka":
+                    obchod_bonus += 30
+                    zpravy.append(
+                        f"Diplomatka {otrok.jmeno} vyjednala výhodné smlouvy "
+                        f"pro tržiště (+{obchod_bonus} 🪙)."
+                    )
+                else:
+                    zpravy.append(
+                        f"{otrok.jmeno} dohlédla na obchodní dohody tržiště "
+                        f"(+{obchod_bonus} 🪙)."
+                    )
+                obchod_zisk += obchod_bonus
             elif b_id == "oltar_stinu":
                 temno_zisk += 6
                 krystaly_zisk += 3
             elif b_id == "kasarna":
                 if char in ("amazonka", "padla_paladinka"):
                     zpravy.append(f"{otrok.jmeno} vycvičila stráže v tvrdém boji (+bonus k obraně).")
+
+        smlouva = OBCHODNI_SMLOUVY.get(self.obchodni_smlouva)
+        trziste_lvl = self.budovy.get("trziste", 0)
+        if smlouva and trziste_lvl > 0:
+            surovina = smlouva["surovina"]
+            mnozstvi = smlouva["mnozstvi"] * trziste_lvl
+            if getattr(self, surovina) >= mnozstvi:
+                setattr(self, surovina, getattr(self, surovina) - mnozstvi)
+                smlouva_zisk = smlouva["zlato"] * trziste_lvl
+                obchod_zisk += smlouva_zisk
+                zpravy.append(
+                    f"{smlouva['nazev']}: dodáno {mnozstvi} "
+                    f"{surovina}, tržba +{smlouva_zisk} 🪙."
+                )
+            else:
+                zpravy.append(
+                    f"{smlouva['nazev']} neproběhla: chybí {mnozstvi} "
+                    f"jednotek suroviny {surovina}."
+                )
+
+        celnice_lvl = self.budovy.get("celnice", 0)
+        if obchod_zisk and celnice_lvl:
+            clo_bonus = int(obchod_zisk * celnice_lvl * 0.2)
+            obchod_zisk += clo_bonus
+            zpravy.append(
+                f"Celní dům vybral +{clo_bonus} 🪙 z obchodních toků "
+                f"(úroveň {celnice_lvl})."
+            )
 
         self.drevo += drevo_zisk
         self.kamen += kamen_zisk
@@ -355,6 +446,9 @@ class FortressDevelopment:
             zpravy.append("Kruté desátky přinesly bohatství, ale vzbudily hněv poddaných a inkvizice.")
 
         hra.hrac.gold += zisk_dani
+        hra.hrac.gold += obchod_zisk
+        if obchod_zisk:
+            zpravy.append(f"Tržiště a kupecký cech přinesly +{obchod_zisk} 🪙.")
 
         # Regenerace z lázní a zahrady
         lazne_lvl = self.budovy.get("lazne_dominia", 0)
@@ -374,6 +468,7 @@ class FortressDevelopment:
             "jidlo": jidlo_zisk,
             "krystaly": krystaly_zisk,
             "dane": zisk_dani,
+            "obchod": obchod_zisk,
             "vyzkum": body_vyzkumu,
             "zpravy": zpravy,
         }
@@ -390,6 +485,7 @@ class FortressDevelopment:
             "rozsireni": self.rozsireni,
             "pracovnici": self.pracovnici,
             "danova_politika": self.danova_politika,
+            "obchodni_smlouva": self.obchodni_smlouva,
             "karavany_aktivni": self.karavany_aktivni,
             "arena_rank": self.arena_rank,
             "bojova_partnerka": self.bojova_partnerka,
@@ -407,6 +503,11 @@ class FortressDevelopment:
         inst.zelezo = max(0, int(data.get("zelezo", 40)))
         inst.krystaly = max(0, int(data.get("krystaly", 15)))
         inst.danova_politika = data.get("danova_politika", "vyvazena")
+        smlouva = data.get("obchodni_smlouva", "")
+        inst.obchodni_smlouva = (
+            smlouva if isinstance(smlouva, str) and smlouva in OBCHODNI_SMLOUVY
+            else ""
+        )
         inst.arena_rank = max(0, int(data.get("arena_rank", 0)))
         inst.bojova_partnerka = str(data.get("bojova_partnerka", ""))
         inst.rozsireni = data.get("rozsireni", []) if isinstance(data.get("rozsireni"), list) else []

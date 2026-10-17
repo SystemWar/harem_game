@@ -2,7 +2,7 @@
 import random
 from utils.vypis import clear, tisk_ok, tisk_chyba, tisk_info, vytiskni_volbu, hlavicka
 from config import GOLD, GREEN, RED, CYAN, MAGENTA, YELLOW, WHITE, NC, BOLD, DIM
-from models.fortress import PEVNOSTNI_BUDOVY
+from models.fortress import OBCHODNI_SMLOUVY, PEVNOSTNI_BUDOVY
 from data.charaktery import CHARAKTERY
 
 
@@ -175,6 +175,10 @@ def priradit_pracovnice(hra, hrac, harem, pevnost):
                         doporuceni = f" {MAGENTA}★ Mystická synergie!{NC}"
                     elif vybrany_klic == "statek" and o.charakter == "subka":
                         doporuceni = f" {CYAN}★ Pracovitá podpora{NC}"
+                    elif vybrany_klic == "trziste" and o.charakter == "diplomatka":
+                        doporuceni = f" {GOLD}★ Mistryně obchodních smluv!{NC}"
+                    elif vybrany_klic == "celnice" and o.charakter == "diplomatka":
+                        doporuceni = f" {GOLD}★ Zkušená celní vyjednavačka!{NC}"
                     print(f"  {BOLD}{j}){NC} {o.jmeno} [{char}]{doporuceni}")
                 vytiskni_volbu('0', 'Zpět', RED)
 
@@ -426,6 +430,52 @@ def obchodni_karavany(hra, hrac, pevnost):
         pass
 
 
+def sprava_obchodni_smlouvy(pevnost):
+    clear()
+    hlavicka("Obchodní smlouvy tržiště")
+    if pevnost.budovy.get("trziste", 0) <= 0:
+        tisk_chyba("Nejdřív postav Tržiště & kupecký cech.")
+        input("Enter...")
+        return
+
+    aktivni = OBCHODNI_SMLOUVY.get(pevnost.obchodni_smlouva)
+    if aktivni:
+        print(f"Aktivní smlouva: {aktivni['nazev']}")
+    else:
+        print("Aktivní smlouva: žádná")
+    print("\nPři každém novém dni dodáš suroviny za odměnu násobenou úrovní tržiště.")
+    smlouvy = list(OBCHODNI_SMLOUVY.items())
+    for index, (_, smlouva) in enumerate(smlouvy, 1):
+        print(
+            f"{index}) {smlouva['nazev']} — "
+            f"{smlouva['mnozstvi']} {smlouva['surovina']} → +{smlouva['zlato']} 🪙 "
+            "za úroveň tržiště"
+        )
+    vytiskni_volbu("0", "Zrušit smlouvu / zpět")
+
+    try:
+        volba = input("> ").strip()
+    except EOFError:
+        return
+    if volba == "0":
+        pevnost.obchodni_smlouva = ""
+        tisk_info("Obchodní smlouva byla zrušena.")
+        input("Enter...")
+        return
+    try:
+        smlouva_id = smlouvy[int(volba) - 1][0]
+    except (IndexError, ValueError):
+        tisk_chyba("Neplatná volba.")
+        input("Enter...")
+        return
+    uspech, zprava = pevnost.nastav_obchodni_smlouvu(smlouva_id)
+    if uspech:
+        tisk_ok(zprava)
+    else:
+        tisk_chyba(zprava)
+    input("Enter...")
+
+
 def zkouska_obrany(hra, hrac, pevnost):
     clear()
     hlavicka("Zkouška obrany pevnosti & Nájezdy")
@@ -495,18 +545,22 @@ def spravovat_budovy(arg0, arg1=None):
         print(f"                 {CYAN}⚒️ {pevnost.zelezo} železa{NC} | {YELLOW}🌾 {pevnost.zasoby} zásob jídla{NC} | {MAGENTA}🔮 {pevnost.krystaly} krystalů{NC}\n")
 
         print(f"{YELLOW}--- Přehled sektorů panství ---{NC}")
-        print(f"  • {GREEN}Hospodářství:{NC} Pila úr.{pevnost.budovy.get('pila',0)} | Kamenolom úr.{pevnost.budovy.get('kamenolom',0)} | Důl úr.{pevnost.budovy.get('dul',0)} | Statek úr.{pevnost.budovy.get('statek',0)}")
+        print(f"  • {GREEN}Hospodářství:{NC} Pila úr.{pevnost.budovy.get('pila',0)} | Kamenolom úr.{pevnost.budovy.get('kamenolom',0)} | Důl úr.{pevnost.budovy.get('dul',0)} | Statek úr.{pevnost.budovy.get('statek',0)} | Tržiště úr.{pevnost.budovy.get('trziste',0)} | Celnice úr.{pevnost.budovy.get('celnice',0)}")
         print(f"  • {RED}Vojenství:{NC} Hradby úr.{pevnost.budovy.get('hradby',0)} | Věže úr.{pevnost.budovy.get('strazni_vez',0)} | Kasárna úr.{pevnost.budovy.get('kasarna',0)} | Kovárna úr.{pevnost.budovy.get('kovarna',0)}")
         print(f"  • {MAGENTA}Mystika & Harém:{NC} Oltář úr.{pevnost.budovy.get('oltar_stinu',0)} | Archiv úr.{pevnost.budovy.get('archiv',0)} | Zahrada úr.{pevnost.budovy.get('zahrada',0)} | Lázně úr.{pevnost.budovy.get('lazne_dominia',0)}")
         if pevnost.pracovnici:
             prac_txt = ", ".join(f"{PEVNOSTNI_BUDOVY.get(k,{}).get('nazev',k)}: {v}" for k, v in pevnost.pracovnici.items())
             print(f"  • {CYAN}Dohlížitelky:{NC} {prac_txt}")
+        smlouva = OBCHODNI_SMLOUVY.get(pevnost.obchodni_smlouva)
+        if smlouva:
+            print(f"  • {GOLD}Obchodní smlouva:{NC} {smlouva['nazev']}")
 
         print(f"\n{GOLD}{BOLD}╔════ 🏗️ VÝSTAVBA & ROZVOJ ═════════════════╗{NC}   {MAGENTA}{BOLD}╔════ ⚖️ HOSPODÁŘSTVÍ & STRATEGIE ═════════╗{NC}")
         print(f"║ {GREEN} 1){NC} 🔨 Výstavba & vylepšování budov      ║   ║ {YELLOW} 3){NC} ⚖️ Hospodářská & daňová politika   ║")
         print(f"║ {CYAN} 2){NC} 👷 Dohlížitelky (přiřazení otrokyň)  ║   ║ {GREEN} 4){NC} 🛒 Tržnice surovin (nákup / prodej)║")
         print(f"║ {RED} 6){NC} 🛡️ Zkouška obrany & nájezdy          ║   ║ {GOLD} 5){NC} 🐫 Vypravit obchodní karavanu      ║")
-        print(f"║ {MAGENTA} 7){NC} 🤵 Najímání personálu panství       ║   ║ {WHITE} 0){NC} 🚪 Odejít zpět do dominia          ║")
+        print(f"║ {MAGENTA} 7){NC} 🤵 Najímání personálu panství       ║   ║ {GOLD} 8){NC} 📜 Obchodní smlouvy tržiště       ║")
+        print(f"║ {WHITE} 0){NC} 🚪 Odejít zpět do dominia          ║   ║                                      ║")
         print(f"{GOLD}{BOLD}╚════════════════════════════════════════╝{NC}   {MAGENTA}{BOLD}╚════════════════════════════════════════╝{NC}")
 
         try:
@@ -530,6 +584,8 @@ def spravovat_budovy(arg0, arg1=None):
             zkouska_obrany(hra, hrac, pevnost)
         elif volba == "7":
             sprava_personalu(hra, hrac, pevnost)
+        elif volba == "8":
+            sprava_obchodni_smlouvy(pevnost)
         else:
             tisk_chyba("Neplatná volba.")
             try:

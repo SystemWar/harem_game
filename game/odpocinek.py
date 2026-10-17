@@ -155,8 +155,19 @@ def odpocinek(hra, rezim=None):
     if hasattr(hra, "pevnost") and hra.pevnost is not None:
         try:
             vynos_pevnost = hra.pevnost.denni_produkce(hra)
-            if vynos_pevnost and (vynos_pevnost.get("dane", 0) > 0 or vynos_pevnost.get("drevo", 0) > 0):
-                tisk_ok(f"🏰 Dominium (hospodářství): +{vynos_pevnost['dane']} 🪙, +{vynos_pevnost['drevo']} 🪵, +{vynos_pevnost['kamen']} 🪨, +{vynos_pevnost['zelezo']} ⚒️")
+            if vynos_pevnost and (
+                vynos_pevnost.get("dane", 0) > 0
+                or vynos_pevnost.get("obchod", 0) > 0
+                or vynos_pevnost.get("drevo", 0) > 0
+            ):
+                tisk_ok(
+                    f"🏰 Dominium (hospodářství): "
+                    f"+{vynos_pevnost['dane']} 🪙 daně, "
+                    f"+{vynos_pevnost.get('obchod', 0)} 🪙 obchod, "
+                    f"+{vynos_pevnost['drevo']} 🪵, "
+                    f"+{vynos_pevnost['kamen']} 🪨, "
+                    f"+{vynos_pevnost['zelezo']} ⚒️"
+                )
             for zp in vynos_pevnost.get("zpravy", []):
                 tisk_info(f"🏰 {zp}")
         except Exception:

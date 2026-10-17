@@ -2193,6 +2193,56 @@ class HraTesty(unittest.TestCase):
         self.assertIn("drevo", vysledky)
         self.assertIn("dane", vysledky)
 
+    def test_trziste_prinasi_obchod_a_diplomatka_zvysuje_vynos(self):
+        hra = Hra()
+        hra.pevnost.budovy["trziste"] = 2
+        diplomatka = Otrokyně(
+            jmeno="Mira", charakter="diplomatka", duvera=80
+        )
+        hra.harem.pridat(diplomatka)
+        hra.pevnost.pracovnici["trziste"] = diplomatka.jmeno
+        zlato_pred = hra.hrac.gold
+
+        vysledky = hra.pevnost.denni_produkce(hra)
+
+        self.assertEqual(vysledky["obchod"], 203)
+        self.assertEqual(hra.hrac.gold, zlato_pred + vysledky["dane"] + 203)
+        self.assertTrue(
+            any("Diplomatka Mira" in zprava for zprava in vysledky["zpravy"])
+        )
+
+    def test_obchodni_smlouva_spotrebuje_suroviny_a_je_ulozitelna(self):
+        hra = Hra()
+        hra.pevnost.budovy["trziste"] = 1
+        hra.pevnost.drevo = 100
+
+        uspech, _ = hra.pevnost.nastav_obchodni_smlouvu("drevo")
+        self.assertTrue(uspech)
+        zlato_pred = hra.hrac.gold
+        vysledky = hra.pevnost.denni_produkce(hra)
+
+        self.assertEqual(hra.pevnost.drevo, 70)
+        self.assertEqual(vysledky["obchod"], 165)
+        self.assertEqual(
+            hra.hrac.gold, zlato_pred + vysledky["dane"] + vysledky["obchod"]
+        )
+        nactena = Hra.from_dict(hra.to_dict())
+        self.assertEqual(nactena.pevnost.obchodni_smlouva, "drevo")
+
+    def test_celnice_zvysuje_vynos_trziste_a_smluv(self):
+        hra = Hra()
+        hra.pevnost.budovy["trziste"] = 1
+        hra.pevnost.budovy["celnice"] = 2
+        hra.pevnost.drevo = 100
+        hra.pevnost.nastav_obchodni_smlouvu("drevo")
+
+        vysledky = hra.pevnost.denni_produkce(hra)
+
+        self.assertEqual(vysledky["obchod"], 231)
+        self.assertTrue(
+            any("Celní dům vybral +66" in zprava for zprava in vysledky["zpravy"])
+        )
+
     def test_budovatelska_strategie_stavba_a_obrana(self):
         from models.fortress import FortressDevelopment
         pevnost = FortressDevelopment()

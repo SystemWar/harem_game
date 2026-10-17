@@ -240,11 +240,22 @@ Pevnost je tvoje základna. Budováním zvyšuješ produkci zdrojů a odemykáš
 | **Alchymistická věž** | Výroba lektvarů a jedů |
 | **Harémový palác** | Bonus k loajalitě a pohodlí |
 | **Trhliště** | Pasivní příjem zlata |
+| **Tržiště & kupecký cech** | +70 🪙 denně za úroveň; dohlížitelka přidá +25 🪙 a bonus podle důvěry, diplomatka navíc +30 🪙 |
+| **Celní dům & vážnice** | Zvyšuje příjem tržiště i obchodních smluv o 20 % za úroveň |
 | **Temná kaple** | Temná energie, rituály |
 | **Zbrojnice** | Přístup k lepším zbraním |
 | **Bylinkový skleník** | Denní produkce bylin pro alchymii |
 | **Alchymistická laboratoř** | Rychlejší vaření receptů, bonus kvality |
 | **Studna moci** | Větší max. energie hráče |
+
+### Obchodní smlouvy tržiště
+
+Po postavení tržiště otevře menu **16 → 8** obchodní smlouvy. Vyber jednu
+smlouvu s loděnicemi, staviteli nebo zbrojíři; při každém novém dni tržiště
+odečte sjednané dřevo, kámen nebo železo a přidá zlato. Množství surovin i
+odměna rostou s úrovní tržiště. Pokud ve skladu není dostatek materiálu,
+smlouva se ten den neprovede. **Celní dům & vážnice** zvýší celkový výnos
+tržiště i úspěšné smlouvy o 20 % za každou úroveň.
 
 ### Správa personálu (Menu 16 → Personál)
 

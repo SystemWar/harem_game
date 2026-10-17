@@ -54,7 +54,9 @@ def zobraz_statistiky(hra):
 
     h = hra.hrac
     print(f"{CYAN}👤 Postava:{NC}")
+    from game.tituly import hodnost
     print(f"  Jméno: {h.jmeno}")
+    print(f"  Hodnost: {hodnost(hra)['nazev']}")
     print(f"  Level: {h.level} (XP: {h.xp}/{h.xp_next})")
     print(f"  Dominance: {h.dominance}")
     print(f"  Zlato: {h.gold} 🪙")

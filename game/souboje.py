@@ -85,6 +85,21 @@ BOSSOVE = {
             {"nazev": "Boj zblízka šavlemi", "hp": 125, "utok": 27, "obrana": 8},
         ],
     },
+    "kolos_podzemni_areny": {
+        "jmeno": "Kolos podzemní arény",
+        "lokace": "podzemni_arena",
+        "hp": 240,
+        "utok": 26,
+        "obrana": 18,
+        "zlato": 900,
+        "xp": 320,
+        "schopnost": "otres_pisku",
+        "faze": [
+            {"nazev": "Kamenný postoj", "hp": 240, "utok": 26, "obrana": 18},
+            {"nazev": "Písečná bouře", "hp": 170, "utok": 32, "obrana": 12},
+            {"nazev": "Zhroucení ochozů", "hp": 120, "utok": 38, "obrana": 8},
+        ],
+    },
 }
 
 ARENA_LADDER = [
@@ -136,6 +151,19 @@ ARENA_LADDER = [
         "titul": "Bůh Arény",
         "odmena_text": "+1200 🪙, relikvie Šampióna, titul 'Bůh Arény'",
     },
+    {
+        "rank": 5,
+        "liga": "Stínová liga",
+        "jmeno": "Strážce černého písku",
+        "hp": 280,
+        "utok": 34,
+        "obrana": 22,
+        "zlato": 1800,
+        "xp": 420,
+        "titul": "Pán stínové arény",
+        "odmena_text": "+1800 🪙, +25 krystalů, titul 'Pán stínové arény'",
+        "bonus_suroviny": {"krystaly": 25},
+    },
 ]
 
 
@@ -152,6 +180,10 @@ def dostupni_bossove(hra):
             continue
         if boss_id == "inkvizitor_cerne_peceti" and kapitola < 2:
             continue
+        if boss_id == "kolos_podzemni_areny":
+            rank = getattr(getattr(hra, "pevnost", None), "arena_rank", 0)
+            if rank < 3:
+                continue
         dostupni.append((boss_id, data))
     return dostupni
 
@@ -206,7 +238,7 @@ class Souboj:
             terminalni_obrazek("souboj")
             partnerka = self.ziskej_bojovou_partnerku()
             part_str = f" {MAGENTA}[Bojová partnerka: {partnerka.jmeno} ({CHARAKTERY.get(partnerka.charakter,{}).get('nazev', partnerka.charakter)})]{NC}" if partnerka else " [Bez partnerky]"
-            rank_str = f"Úroveň v aréně: {getattr(self.hra.pevnost, 'arena_rank', 0)}/4"
+            rank_str = f"Úroveň v aréně: {getattr(self.hra.pevnost, 'arena_rank', 0)}/{len(ARENA_LADDER)}"
 
             hlavicka("Aréna smrti & Taktické souboje")
             print(f"\n{CYAN}HP: {self.hrac.hp}/{self.hrac.max_hp} | Útok: {self.hracuv_utok()} | Obrana: {self.hracova_obrana()}{NC}")
@@ -309,7 +341,9 @@ class Souboj:
         if rank < len(ARENA_LADDER):
             vytiskni_volbu('1', f'Vyzvat soupeře stupně {rank + 1}!', RED)
         else:
-            tisk_ok("★ Dokončil jsi všechny ligy arény a jsi Bůh Arény!")
+            tisk_ok(f"★ Dokončil jsi všechny ligy arény a jsi {ARENA_LADDER[-1]['titul']}!")
+        if rank >= 3 and "kolos_podzemni_areny" not in getattr(self.hra.kampan, "boss_porazeni", []):
+            tisk_info("V Podzemní aréně na tebe čeká Kolos. Najdi ho na mapě.")
         vytiskni_volbu('0', 'Zpět', WHITE)
 
         try:
@@ -365,6 +399,9 @@ class Souboj:
         data = random.choice(typy)
         obtiznost = self._obtiznost()
         koeficient = profil_obtiznosti(obtiznost)["nepritel"]
+        if self.hra is not None:
+            from game.tituly import hodnost
+            koeficient *= max(0.55, 1 - hodnost(self.hra)["poradi"] * 0.08)
         self.nepritel = Nepritel(
             data["jmeno"],
             max(1, int(data["hp"] * koeficient)),
@@ -400,6 +437,20 @@ class Souboj:
             faze=faze,
         )
         return self.nepritel
+
+    def _efekt_bosse(self, nepritel):
+        """Speciální schopnost bosse před jeho útokem. Vrátí True, pokud něco udělala."""
+        if not nepritel.boss:
+            return False
+        schopnost = BOSSOVE.get(nepritel.boss_id, {}).get("schopnost")
+        if schopnost != "otres_pisku" or nepritel.faze_index < 1:
+            return False
+        if random.random() >= 0.45:
+            return False
+        dmg = 4 + nepritel.faze_index * 3
+        self.hrac.hp -= dmg
+        tisk_info(f"Písek arény se zvedl. Otřes ti ubral {dmg} HP.")
+        return True
 
     def dalsi_faze(self):
         if not self.nepritel or not self.nepritel.boss:
@@ -591,6 +642,9 @@ class Souboj:
                 continue
 
             # Útok nepřítele na hráče
+            self._efekt_bosse(nepritel)
+            if self.hrac.hp <= 0:
+                break
             utok_nepr = max(1, nepritel.utok - (4 if kletba_nepritele > 0 else 0))
             obrana_hrac = self.hracova_obrana() + obranny_bonus
 
@@ -632,6 +686,14 @@ class Souboj:
                     self.hra.pevnost.arena_rank = r
                     titul = ARENA_LADDER[r - 1]["titul"]
                     tisk_ok(f"🏆 Povýšil jsi v žebříčku arény! Získán titul: {BOLD}{GOLD}{titul}{NC}!")
+                    from game.tituly import zaznamenej_povyseni
+                    povyseni = zaznamenej_povyseni(self.hra)
+                    if povyseni:
+                        tisk_ok(f"Hodnost pána vzrostla na: {povyseni['nazev']}.")
+                    for surovina, mnozstvi in ARENA_LADDER[r - 1].get("bonus_suroviny", {}).items():
+                        aktualni = getattr(self.hra.pevnost, surovina, 0)
+                        setattr(self.hra.pevnost, surovina, aktualni + mnozstvi)
+                        tisk_ok(f"Aréna vyplatila bonus: +{mnozstvi} {surovina}.")
 
             if nepritel.boss and self.hra is not None:
                 if hasattr(self.hra, "achievementy"):
@@ -650,6 +712,11 @@ class Souboj:
                         self.hra.hrac.vliv_inkvizice = max(0, self.hra.hrac.vliv_inkvizice - 15)
                         self.hra.hrac.reputace_mesta += 8
                         tisk_ok("Inkvizitor padl. Jeho pečeť oslabila vliv inkvizice.")
+                    elif nepritel.boss_id == "kolos_podzemni_areny":
+                        self.hra.pevnost.krystaly += 12
+                        self.hra.hrac.reputace_mesta += 6
+                        self.hra.hrac.inventar.pridej_predmet("trofej_kolosu")
+                        tisk_ok("Kolos padl. Aréna tě uznala: +12 krystalů, trofej kolosu, reputace +6.")
             self.nepritel = None
             vysledek = True
         else:

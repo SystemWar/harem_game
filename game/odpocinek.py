@@ -154,6 +154,8 @@ def odpocinek(hra, rezim=None):
         tisk_ok(f"🔬 Výzkumné obchodní sítě: +{prijem_vyzkum} 🪙")
     if hasattr(hra, "pevnost") and hra.pevnost is not None:
         try:
+            from game.tituly import zaznamenej_povyseni
+            zaznamenej_povyseni(hra)
             vynos_pevnost = hra.pevnost.denni_produkce(hra)
             if vynos_pevnost and (vynos_pevnost.get("dane", 0) > 0 or vynos_pevnost.get("drevo", 0) > 0):
                 tisk_ok(f"🏰 Dominium (hospodářství): +{vynos_pevnost['dane']} 🪙, +{vynos_pevnost['drevo']} 🪵, +{vynos_pevnost['kamen']} 🪨, +{vynos_pevnost['zelezo']} ⚒️")

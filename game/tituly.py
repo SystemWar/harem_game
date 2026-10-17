@@ -82,15 +82,16 @@ def sance_vyzvy(hra):
 
 
 def zaznamenej_povyseni(hra):
-    """Při postupu jednorázově zlepší vztahy s NPC. Opakované volání nic nepřidá."""
+    """Při postupu jednorázově zlepší vztahy s NPC. Opakované volání nic nepřidá.
+
+    Uložený titul je nejvyšší dosažená hodnost. Pokles a návrat bonus znovu nedá.
+    """
     titul = hodnost(hra)
     posledni = getattr(hra.hrac, "titul_mesta", "")
-    if posledni == titul["nazev"]:
-        return None
     stary = next((item for item in TITULY if item["nazev"] == posledni), TITULY[0])
-    hra.hrac.titul_mesta = titul["nazev"]
     if titul["poradi"] <= stary["poradi"]:
         return None
+    hra.hrac.titul_mesta = titul["nazev"]
     delta = titul["vztah"] - stary["vztah"]
     svet = getattr(hra, "svet", None)
     if delta > 0 and svet is not None and hasattr(svet, "zmen_vztah"):

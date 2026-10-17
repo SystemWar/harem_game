@@ -436,6 +436,7 @@ class Souboj:
             boss_id=boss_id,
             faze=faze,
         )
+        self.nepritel.sila_bosse = sila
         return self.nepritel
 
     def _efekt_bosse(self, nepritel):
@@ -461,11 +462,12 @@ class Souboj:
         nepritel.faze_index += 1
         faze = nepritel.faze[nepritel.faze_index]
         koeficient = profil_obtiznosti(self._obtiznost())["nepritel"]
+        sila = getattr(nepritel, "sila_bosse", 0)
         nepritel.jmeno = f"{BOSSOVE[nepritel.boss_id]['jmeno']} — {faze['nazev']}"
-        nepritel.max_hp = max(1, int(faze["hp"] * koeficient))
+        nepritel.max_hp = max(1, int((faze["hp"] + sila * 18) * koeficient))
         nepritel.hp = nepritel.max_hp
-        nepritel.utok = max(1, int(faze["utok"] * koeficient))
-        nepritel.obrana = max(0, int(faze["obrana"] * koeficient))
+        nepritel.utok = max(1, int((faze["utok"] + sila * 2) * koeficient))
+        nepritel.obrana = max(0, int((faze["obrana"] + sila) * koeficient))
         tisk_info(f"Boss vstoupil do další fáze: {faze['nazev']}.")
         return True
 

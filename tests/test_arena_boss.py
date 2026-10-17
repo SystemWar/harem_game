@@ -33,11 +33,25 @@ class ArenaBossTesty(unittest.TestCase):
         self.assertEqual(len(souboj.nepritel.faze), 3)
         self.assertEqual(BOSSOVE["kolos_podzemni_areny"]["schopnost"], "otres_pisku")
 
-        souboj.nepritel.faze = []
-        souboj.nepritel.hp = 1
-        souboj.nepritel.obrana = 0
-        with patch("builtins.input", side_effect=["1", ""]), patch("random.randint", return_value=0):
+        posunute = []
+        puvodni_dalsi_faze = souboj.dalsi_faze
+
+        def sleduj_fazi():
+            vysledek = puvodni_dalsi_faze()
+            if vysledek:
+                posunute.append(souboj.nepritel.faze_index)
+            return vysledek
+
+        souboj.dalsi_faze = sleduj_fazi
+        hra.hrac.skill_body = 500
+        with patch("builtins.input", side_effect=["1", "1", "1", ""]), patch("random.randint", return_value=0):
             self.assertTrue(souboj.proved_boj())
+        self.assertEqual(posunute, [1, 2])
+        druha = souboj.generuj_bosse(5, "kolos_podzemni_areny")
+        prvni_hp = druha.max_hp
+        self.assertTrue(souboj.dalsi_faze())
+        self.assertGreater(souboj.nepritel.max_hp, 170)
+        self.assertGreater(souboj.nepritel.max_hp, prvni_hp - 200)
         self.assertIn("kolos_podzemni_areny", hra.kampan.boss_porazeni)
         self.assertEqual(hra.pevnost.krystaly, 12)
         self.assertEqual(hra.hrac.reputace_mesta, 6)
@@ -47,8 +61,10 @@ class ArenaBossTesty(unittest.TestCase):
         hra = Hra()
         souboj = Souboj(hra.hrac, hra.mafie, hra)
         souboj.generuj_bosse(1, "kolos_podzemni_areny")
+        hp_pred = hra.hrac.hp
         with patch("random.random", return_value=0.0):
             self.assertFalse(souboj._efekt_bosse(souboj.nepritel))
+        self.assertEqual(hra.hrac.hp, hp_pred)
         souboj.nepritel.faze_index = 1
         with patch("random.random", return_value=0.0):
             self.assertTrue(souboj._efekt_bosse(souboj.nepritel))

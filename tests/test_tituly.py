@@ -33,6 +33,13 @@ class TitulyTesty(unittest.TestCase):
         self.assertIsNone(zaznamenej_povyseni(hra))
         self.assertEqual(hra.svet.vztahy_npc[npc_id], puvodni + 1)
 
+        hra.pevnost.arena_rank = 0
+        self.assertIsNone(zaznamenej_povyseni(hra))
+        self.assertEqual(hra.hrac.titul_mesta, "Strážce dvora")
+        hra.pevnost.arena_rank = 1
+        self.assertIsNone(zaznamenej_povyseni(hra))
+        self.assertEqual(hra.svet.vztahy_npc[npc_id], puvodni + 1)
+
     def test_vysoka_hodnost_odradi_vyzyvatele_a_nahodne_boje(self):
         hra = Hra()
         hra.hrac.reputace_mesta = 0

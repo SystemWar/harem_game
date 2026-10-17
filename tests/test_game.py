@@ -112,6 +112,8 @@ class HraTesty(unittest.TestCase):
         self.assertFalse(uspech)
         self.assertEqual(hra.hrac.sex_energy, energie_pred)
         self.assertEqual(otrok.romance_body, 0)
+        self.assertEqual(otrok.historie_voleb[-1]["typ"], "intimita_odmítnuto")
+        self.assertIn("Odmítla:", otrok.historie_voleb[-1]["volba"])
 
     def test_intimni_chvile_nejsou_dostupne_maloletým_nebo_pri_najmu(self):
         from game.intimita_rozsireni import nabidnout_intimni_chvili

@@ -1,8 +1,7 @@
 # game/intimita_rozsireni.py
 """Rozšířený systém intimních a erotických chvil v harému."""
 
-import random
-from config import RED, MAGENTA, CYAN, GOLD, GREEN, YELLOW, NC, BOLD
+from config import MAGENTA, NC, BOLD
 from utils.vypis import clear, hlavicka, tisk_ok, tisk_chyba, tisk_info, vytiskni_volbu
 from data.charaktery import CHARAKTERY, normalizuj_charakter
 
@@ -110,7 +109,7 @@ def nabidnout_intimni_chvili(hra, otrok):
         input("Enter...")
         return False
 
-    klic_akt, info = aktivity_seznam[idx_akt]
+    _, info = aktivity_seznam[idx_akt]
 
     # Ověření zdrojů
     if hra.hrac.sex_energy < info["cena_sex"]:
@@ -140,10 +139,14 @@ def nabidnout_intimni_chvili(hra, otrok):
         input("Enter...")
         return False
 
-    # Dotaz na souhlas hráče/dívky
-    souhlas = input(f"Zahájit intimní chvíli s {otrok.jmeno}? (a/n): ").strip().lower()
+    souhlas = input(
+        f"Zeptat se {otrok.jmeno}, zda chce {info['nazev'].lower()}? (a/n): "
+    ).strip().lower()
     if souhlas not in ("a", "ano"):
-        tisk_info("Rozhodl ses respektovat její prostor.")
+        otrok.zaznamenej_volbu(
+            "intimita_odmítnuto", f"Odmítla: {info['nazev']}", hra.hrac.den
+        )
+        tisk_info(f"{otrok.jmeno} odmítla. Její rozhodnutí respektuješ.")
         input("Enter...")
         return False
 

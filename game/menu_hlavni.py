@@ -177,6 +177,13 @@ def vykresli_hlavni_menu(hra):
     print(f"{GOLD}{BOLD}╚{'═'*76}╝{NC}")
     print()
 
+    from game.denni_udalosti import prehled_pribehoveho_stavu
+    stav_pribehu = prehled_pribehoveho_stavu(hra)
+    for radek in stav_pribehu:
+        print(f"{MAGENTA}🎭 {radek}{NC}")
+    if stav_pribehu:
+        print()
+
     vykresli_prehled_ctvrti(hra)
 
     popisy = {

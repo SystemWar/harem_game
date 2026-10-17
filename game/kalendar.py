@@ -8,6 +8,12 @@ def zobraz_kalendar(hra):
         hlavicka('Kalendář a sezónní události')
         print(f"Den {hra.hrac.den} | týden {kalendar.tyden} | sezóna: {kalendar.sezona}")
         print(kalendar.sezonni_udalost())
+        from game.denni_udalosti import prehled_pribehoveho_stavu
+        stav_pribehu = prehled_pribehoveho_stavu(hra)
+        if stav_pribehu:
+            print("\nPříběhový stav:")
+            for radek in stav_pribehu:
+                print(f"  {radek}")
         print("\nPoslední události:")
         zaznamy = [
             udalost for udalost in kalendar.udalosti

@@ -121,6 +121,9 @@ inkvizice sleduje stopu dominia, kupecká karavana nabídne dohodu a rival můž
 vyslat ultimátum. Dostupné možnosti ukazují cenu před potvrzením; nevyřešené
 pokračování i historie se ukládají do save a událost lze také nechat bez zásahu.
 Původní náhodná událost světa si zachovává svou vlastní šanci na spuštění.
+Aktivní linka a příměří jsou vidět v hlavním menu i kalendáři. Odmítnutí
+rivalova ultimáta může oslabit kontrolu nad nejzranitelnějším územím; vyjednání
+dohody místo toho na několik dní zabrání dalším rivalovým ultimátům.
 
 ---
 

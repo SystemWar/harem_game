@@ -123,7 +123,7 @@ PRIBEHOVE_LINKY = {
                     ),
                     "odmitnuti": (
                         "rival_odmitnuti_end",
-                        "Rival ustoupil před tvým odhodláním; jeho posel zanechal užitečný obnos.",
+                        "Rival udeřil na tvou nejzranitelnější čtvrť, pak stáhl své síly.",
                     ),
                 },
             },
@@ -230,8 +230,11 @@ def _aplikuj_efekt(hra, efekt):
     elif efekt == "rival_dohoda":
         hrac.reputace_mesta = min(100, hrac.reputace_mesta + 2)
         hrac.vliv_inkvizice = max(0, hrac.vliv_inkvizice - 1)
+        hra.kalendar.rivalni_primeri_do = max(
+            hra.kalendar.rivalni_primeri_do,
+            hrac.den + 3,
+        )
     elif efekt == "rival_odmitnuti_end":
-        hrac.gold += 15
         _zmen_frakci(hra, "syndikat_stinu", -1)
     elif efekt == "karavana_podil_end":
         hrac.gold += 30
@@ -320,8 +323,29 @@ def _spust_pribehovou_udalost(hra, den):
             kalendar.aktivni_pribehova_linka = {}
             return _spust_pribehovou_udalost(hra, den)
         efekt, text_vysledku = vysledek
+        if efekt == "rival_odmitnuti_end" and not linka.get("cil_uzemi"):
+            text_vysledku = (
+                "Rival neměl v tvé městské síti žádné území, na které by mohl "
+                "udeřit, a stáhl se."
+            )
         print(f"\n{etapa['titulek']}\n{text_vysledku}")
         _aplikuj_efekt(hra, efekt)
+        if efekt == "rival_odmitnuti_end":
+            cil_uzemi = linka.get("cil_uzemi")
+            uzemi = next(
+                (
+                    polozka for polozka in hra.mafie.uzemi
+                    if polozka.nazev == cil_uzemi
+                ),
+                None,
+            )
+            if uzemi is not None:
+                ztrata = min(12, max(0, uzemi.kontrola))
+                uzemi.kontrola = max(0, uzemi.kontrola - ztrata)
+                text_vysledku += (
+                    f" Rival mezitím oslabil kontrolu nad územím "
+                    f"{uzemi.nazev} o {ztrata} %."
+                )
         tisk_ok(text_vysledku)
         kalendar.aktivni_pribehova_linka = {}
         _zaznamenej_udalost(hra, linka_id, etapa["titulek"], den)
@@ -337,16 +361,42 @@ def _spust_pribehovou_udalost(hra, den):
             (ident, data)
             for ident, data in PRIBEHOVE_LINKY.items()
             if ident not in nedavne
+            and not (
+                ident == "rivalni_posel"
+                and hra.hrac.den <= kalendar.rivalni_primeri_do
+            )
         ]
         if not dostupne:
-            dostupne = list(PRIBEHOVE_LINKY.items())
+            dostupne = [
+                (ident, data)
+                for ident, data in PRIBEHOVE_LINKY.items()
+                if not (
+                    ident == "rivalni_posel"
+                    and hra.hrac.den <= kalendar.rivalni_primeri_do
+                )
+            ]
         linka_id, definice = random.choices(
             dostupne,
             weights=[max(1, definice["vaha"](hra)) for _, definice in dostupne],
             k=1,
         )[0]
         etapa = definice["etapy"][0]
-        print(f"\n{etapa['titulek']}\n{etapa['text']}")
+        text_udalosti = etapa["text"]
+        uzemi_rivala = None
+        vlastnena_uzemi = [
+            uzemi for uzemi in hra.mafie.uzemi
+            if uzemi.obsazeno and uzemi.kontrola > 0
+        ]
+        if linka_id == "rivalni_posel" and vlastnena_uzemi:
+            uzemi_rivala = min(
+                vlastnena_uzemi,
+                key=lambda uzemi: (uzemi.kontrola, uzemi.nazev),
+            )
+            text_udalosti += (
+                f" Nejzranitelnější je {uzemi_rivala.nazev} "
+                f"(kontrola {uzemi_rivala.kontrola} %)."
+            )
+        print(f"\n{etapa['titulek']}\n{text_udalosti}")
         moznost = _vyber_moznost(hra, etapa["moznosti"])
         if moznost is None:
             tisk_info("Do události ses nevložil; rozhodnutí zůstává na tobě příště.")
@@ -362,6 +412,12 @@ def _spust_pribehovou_udalost(hra, den):
             "etapa": 1,
             "vetv": moznost["vetv"],
         }
+        if (
+            linka_id == "rivalni_posel"
+            and moznost["vetv"] == "odmitnuti"
+            and uzemi_rivala is not None
+        ):
+            kalendar.aktivni_pribehova_linka["cil_uzemi"] = uzemi_rivala.nazev
         _zaznamenej_udalost(hra, linka_id, etapa["titulek"], den)
 
     zaznamenej(hra, f"Příběhová událost: {etapa['titulek']}")
@@ -411,3 +467,31 @@ def spust_denni_udalost(hra):
     _spust_samostatnou_udalost(hra, den)
     kalendar.den_posledni_pribehove_udalosti = den
     return True
+
+
+def prehled_pribehoveho_stavu(hra):
+    """Vrátí stručné řádky o aktivní lince a trvajícím příměří."""
+    kalendar = hra.kalendar
+    prehled = []
+    linka = kalendar.aktivni_pribehova_linka
+    if isinstance(linka, dict):
+        ident = linka.get("id")
+        definice = PRIBEHOVE_LINKY.get(ident)
+        if definice:
+            try:
+                etapa_index = int(linka.get("etapa", 0))
+            except (TypeError, ValueError):
+                etapa_index = -1
+            if 0 <= etapa_index < len(definice["etapy"]):
+                text = (
+                    f"Aktivní linka: {definice['nazev']} — "
+                    f"{definice['etapy'][etapa_index]['titulek']}"
+                )
+                cil = linka.get("cil_uzemi")
+                if isinstance(cil, str) and cil:
+                    text += f" (ohroženo: {cil})"
+                prehled.append(text)
+    dny_primeri = kalendar.rivalni_primeri_do - hra.hrac.den
+    if dny_primeri > 0:
+        prehled.append(f"Příměří s městským rivalem: ještě {dny_primeri} dní.")
+    return prehled

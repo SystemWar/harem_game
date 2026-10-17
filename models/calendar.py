@@ -13,6 +13,7 @@ class CalendarSystem:
     posledni_udalost: str = ""
     aktivni_pribehova_linka: dict = field(default_factory=dict)
     den_posledni_pribehove_udalosti: int = 0
+    rivalni_primeri_do: int = 0
 
     @property
     def sezona(self):
@@ -46,6 +47,7 @@ class CalendarSystem:
             "posledni_udalost": self.posledni_udalost,
             "aktivni_pribehova_linka": self.aktivni_pribehova_linka,
             "den_posledni_pribehove_udalosti": self.den_posledni_pribehove_udalosti,
+            "rivalni_primeri_do": self.rivalni_primeri_do,
         }
 
     @classmethod
@@ -62,6 +64,10 @@ class CalendarSystem:
             den_udalosti = max(0, int(data.get("den_posledni_pribehove_udalosti", 0)))
         except (TypeError, ValueError):
             den_udalosti = 0
+        try:
+            primeri_do = max(0, int(data.get("rivalni_primeri_do", 0)))
+        except (TypeError, ValueError):
+            primeri_do = 0
         return cls(
             den=den,
             udalosti=udalosti[-30:] if isinstance(udalosti, list) else [],
@@ -69,4 +75,5 @@ class CalendarSystem:
             if isinstance(data.get("posledni_udalost", ""), str) else "",
             aktivni_pribehova_linka=dict(linka) if isinstance(linka, dict) else {},
             den_posledni_pribehove_udalosti=den_udalosti,
+            rivalni_primeri_do=primeri_do,
         )

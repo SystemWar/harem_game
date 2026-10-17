@@ -18,6 +18,7 @@ from game.settings import NastaveniHry
 from game.souboje import BOSSOVE, Nepritel, Souboj
 from main import nova_hra
 from models.otrokyne import Otrokyně
+from models.mafie import Uzemi
 from utils.vypis import barva, hlavicka, vytiskni_volbu
 
 
@@ -1993,7 +1994,76 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(hra.hrac.reputace_mesta, reputace_pred + 2)
         self.assertEqual(hra.hrac.gold, gold_po_udalosti)
         self.assertFalse(hra.kalendar.aktivni_pribehova_linka)
+        self.assertEqual(hra.kalendar.rivalni_primeri_do, 5)
         self.assertIn("Odezva rivala", vystup.getvalue())
+
+    def test_odmitnuti_rivala_oslabi_nejhure_kontrolovane_uzemi(self):
+        from game.denni_udalosti import (
+            PRIBEHOVE_LINKY,
+            SAMOSTATNE_UDALOSTI,
+            spust_denni_udalost,
+        )
+
+        hra = Hra()
+        hra.mafie.uzemi.extend([
+            Uzemi("Přístav", 100, kontrola=70, obsazeno=True),
+            Uzemi("Tržiště", 80, kontrola=45, obsazeno=True),
+        ])
+        nejzranitelnejsi = hra.mafie.uzemi[1]
+        with patch(
+            "game.denni_udalosti.random.choices",
+            return_value=[("rivalni_posel", PRIBEHOVE_LINKY["rivalni_posel"])],
+        ), patch(
+            "game.denni_udalosti.random.choice",
+            return_value=SAMOSTATNE_UDALOSTI[0],
+        ), patch("builtins.input", side_effect=["2", "0"]), redirect_stdout(
+            io.StringIO()
+        ):
+            spust_denni_udalost(hra)
+
+        self.assertEqual(
+            hra.kalendar.aktivni_pribehova_linka["cil_uzemi"],
+            "Tržiště",
+        )
+        self.assertEqual(nejzranitelnejsi.kontrola, 45)
+
+        hra.hrac.den = 2
+        hra.kalendar.den = 2
+        vystup = io.StringIO()
+        with patch(
+            "game.denni_udalosti.random.choice",
+            return_value=SAMOSTATNE_UDALOSTI[1],
+        ), patch("builtins.input", return_value="0"), redirect_stdout(vystup):
+            spust_denni_udalost(hra)
+
+        self.assertEqual(nejzranitelnejsi.kontrola, 33)
+        self.assertIn("kontrolu nad územím Tržiště o 12 %", vystup.getvalue())
+
+    def test_aktivni_linka_a_primeri_se_zobrazi_v_menu_i_kalendari(self):
+        from game.kalendar import zobraz_kalendar
+        from game.menu_hlavni import vykresli_hlavni_menu
+
+        hra = Hra()
+        hra.kalendar.aktivni_pribehova_linka = {
+            "id": "rivalni_posel",
+            "etapa": 1,
+            "vetv": "odmitnuti",
+            "cil_uzemi": "Tržiště",
+        }
+        hra.kalendar.rivalni_primeri_do = hra.hrac.den + 3
+
+        menu_vystup = io.StringIO()
+        with redirect_stdout(menu_vystup):
+            vykresli_hlavni_menu(hra)
+        self.assertIn("Posel rivala", menu_vystup.getvalue())
+        self.assertIn("ohroženo: Tržiště", menu_vystup.getvalue())
+        self.assertIn("Příměří s městským rivalem", menu_vystup.getvalue())
+
+        kalendar_vystup = io.StringIO()
+        with patch("builtins.input", return_value="0"), redirect_stdout(kalendar_vystup):
+            zobraz_kalendar(hra)
+        self.assertIn("Příběhový stav:", kalendar_vystup.getvalue())
+        self.assertIn("ohroženo: Tržiště", kalendar_vystup.getvalue())
 
     def test_prvni_npc_ukol_neodemkne_achievement_retezce(self):
         hra = Hra()

@@ -73,6 +73,12 @@ PREDMETY = {
         "boj": None,
         "hodnota": 0,
     },
+    "trofej_kolosu": {
+        "nazev": "Trofej kolosu",
+        "popis": "Úlomek brnění podzemního kolosu. Jednorázově posílí obranu v boji.",
+        "boj": "obrana",
+        "hodnota": 14,
+    },
     "balzam_stinu": {
         "nazev": "Balzám stínů",
         "popis": "Obnoví 20 HP a 8 temné energie mimo boj.",

@@ -692,6 +692,8 @@ Před vydáním musí projít celá sada testů.
 - ✅ Správa personálu pevnosti (Majordomus, Šaman, Zahradník)
 - ✅ Noční harémové eventy (sesterství, koupelna, dary)
 - ✅ Bojová společnice systém
+- ✅ Stínová liga arény (5. stupeň) a boss Kolos podzemní arény
+- ✅ Hodnosti pána (aréna + pevnost + reputace): daně, výzvy a vztahy s NPC
 
 ---
 

@@ -7,6 +7,7 @@ from config import (
 )
 from utils.vypis import ascii_art, banner_lokace, terminalni_obrazek, ukazatel
 from game.cile_hry import prehled_cilu
+from game.tituly import dalsi_titul, hodnost, zaznamenej_povyseni
 
 
 POLOZKY_HLAVNIHO_MENU = (
@@ -148,6 +149,19 @@ def vykresli_hlavni_menu(hra):
         f"{GOLD}{BOLD}║{NC}"
     )
     print(f"{GOLD}{BOLD}╚{'═'*76}╝{NC}")
+    zaznamenej_povyseni(hra)
+    titul = hodnost(hra)
+    dalsi = dalsi_titul(hra)
+    dan_txt = f"+{int(titul['dan'] * 100)} % daní" if titul["dan"] else "bez bonusu daní"
+    if dalsi:
+        print(
+            f"{GOLD}👑 {titul['nazev']}{NC} ({dan_txt})  "
+            f"{DIM}další: {dalsi['nazev']} — aréna {hra.pevnost.arena_rank}/{dalsi['arena']}, "
+            f"pevnost {hra.pevnost.uroven}/{dalsi['pevnost']}, "
+            f"reputace {hra.hrac.reputace_mesta}/{dalsi['reputace']}{NC}"
+        )
+    else:
+        print(f"{GOLD}👑 {titul['nazev']}{NC} ({dan_txt}). Nikdo z arény se tě neodváží vyzvat.")
     print()
 
     cile = prehled_cilu(hra)

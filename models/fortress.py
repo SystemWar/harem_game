@@ -197,7 +197,7 @@ class FortressDevelopment:
     danova_politika: str = "vyvazena"               # "laskava", "vyvazena", "kruta"
     obchodni_smlouva: str = ""
     karavany_aktivni: List[Dict[str, Any]] = field(default_factory=list)
-    arena_rank: int = 0                            # 0: Rekrut, 1: Rváč, 2: Gladiátor, 3: Šampion, 4: Bůh arény
+    arena_rank: int = 0                            # 0–5, viz ARENA_LADDER v game/souboje.py
     bojova_partnerka: str = ""                     # jméno zvolené otrokyně do soubojů
     personal: Dict[str, Any] = field(default_factory=dict)   # personál dominia: spravce, vyhazovac, alchymista
 
@@ -444,6 +444,14 @@ class FortressDevelopment:
             hra.hrac.reputace_mesta = max(-50, hra.hrac.reputace_mesta - 1)
             hra.hrac.vliv_inkvizice = min(100, hra.hrac.vliv_inkvizice + 2)
             zpravy.append("Kruté desátky přinesly bohatství, ale vzbudily hněv poddaných a inkvizice.")
+
+        from game.tituly import hodnost, uprav_dan
+        titul = hodnost(hra)
+        zisk_dani = uprav_dan(zisk_dani, hra)
+        if titul["dan"] > 0:
+            zpravy.append(
+                f"Hodnost {titul['nazev']} zvýšila výběr daní o {int(titul['dan'] * 100)} %."
+            )
 
         hra.hrac.gold += zisk_dani
         hra.hrac.gold += obchod_zisk

@@ -1,6 +1,7 @@
 # game/udalosti.py
 import random
 from utils.vypis import tisk_ok, tisk_chyba, tisk_info
+from game.tituly import hodnost, sance_vyzvy
 
 def spust_nahodnou_udalost(hra):
     if random.random() > 0.3:
@@ -12,7 +13,7 @@ def spust_nahodnou_udalost(hra):
             "popis": "Skupina banditů zaútočila na harém.",
             "efekt": prepadeni,
             "podminka": lambda h: bool(h.harem.vsechny_aktivni()),
-            "vaha": lambda h: max(1, 4 - h.mafie.bojova_sila() // 10),
+            "vaha": lambda h: max(1, 4 - h.mafie.bojova_sila() // 10 - hodnost(h)["poradi"]),
         },
         {
             "nazev": "Nemoc otrokyně",
@@ -118,6 +119,13 @@ def spust_nahodnou_udalost(hra):
             "vaha": lambda h: 1 + h.hrac.vliv_inkvizice // 30,
         },
         {
+            "nazev": "Výzva z arény",
+            "popis": "Někdo z ochozů zvažuje, jestli se neznámému pánovi vysměje.",
+            "efekt": vyzva_z_areny,
+            "podminka": lambda h: hodnost(h)["id"] != "pan_stinu",
+            "vaha": lambda h: sance_vyzvy(h),
+        },
+        {
             "nazev": "Výnosná černá tržba",
             "popis": "Síť čtvrtí uzavřela obchod s kupci, kteří se vyhýbají oficiálním cestám.",
             "efekt": cerna_trzba,
@@ -140,6 +148,17 @@ def spust_nahodnou_udalost(hra):
             "udalost": udalost["nazev"],
         })
         hra.kalendar.udalosti = hra.kalendar.udalosti[-30:]
+
+def vyzva_z_areny(hra):
+    titul = hodnost(hra)
+    if titul["poradi"] >= 2:
+        hra.hrac.reputace_mesta += 1
+        tisk_ok(f"Vyzývatel se před titulem {titul['nazev']} stáhl. Reputace +1.")
+        return
+    ztrata = random.randint(15, 40)
+    hra.hrac.gold = max(0, hra.hrac.gold - ztrata)
+    tisk_chyba(f"Druhořadý rváč tě zostudil před davem. Přišel jsi o {ztrata} zlaťáků.")
+
 
 def prepadeni(hra):
     if hra.mafie.bojova_sila() > 20:

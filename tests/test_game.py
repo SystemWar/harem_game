@@ -80,7 +80,7 @@ class HraTesty(unittest.TestCase):
         hra.harem.pridat(otrok)
         energie_pred = hra.hrac.sex_energy
 
-        with patch("builtins.input", side_effect=["15", "4", "a", ""]), redirect_stdout(io.StringIO()):
+        with patch("builtins.input", side_effect=["15", "4", "a", "", ""]), redirect_stdout(io.StringIO()):
             _osobni_akce(hra, otrok)
 
         self.assertEqual(hra.hrac.sex_energy, energie_pred - 14)

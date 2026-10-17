@@ -311,7 +311,6 @@ def generuj_dialog(
     pouzit_cache: bool = True,
     ticho: bool = False,
 ) -> str:
-    global _BACKEND_OFFLINE_UNTIL
     zap = True
     if nastaveni is not None:
         zap = _ai_zapnuto(nastaveni)

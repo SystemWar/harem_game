@@ -136,7 +136,7 @@ class OsudySystem:
             osud = self._osud(otrok)
             krok = self.dalsi_krok(otrok)
             terminalni_obrazek("osudy")
-            hlavicka(f'Osud: {osud['nazev']} ({otrok.jmeno})')
+            hlavicka(f"Osud: {osud['nazev']} ({otrok.jmeno})")
             print(osud["popis"])
             print(f"Stav: {otrok.osud_krok}/{len(osud['kroky'])} rozhodnutí")
             if krok is None:

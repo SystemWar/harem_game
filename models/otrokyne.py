@@ -112,10 +112,12 @@ class Otrokyně:
             return "Osud zatím neznámý"
         return f"{self.osud_id} ({self.osud_krok})"
 
-    def zaznamenej_volbu(self, kategorie, popis, den=None):
+    def zaznamenej_volbu(self, kategorie, popis, den=None, **metadata):
         zaznam = {"typ": kategorie, "volba": popis}
         if den is not None:
             zaznam["den"] = den
+        if metadata:
+            zaznam.update(metadata)
         self.historie_voleb.append(zaznam)
         if den is not None:
             self.zaznamenej_statistiky(den)

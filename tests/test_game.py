@@ -74,6 +74,44 @@ class HraTesty(unittest.TestCase):
         self.assertNotIn("Něžnost", text)
         self.assertNotIn("Forced orgasm", text)
 
+    def test_vztahove_combo_prida_bonus_po_spravne_sekvenci(self):
+        from game.interakce import proved_interakci
+
+        hra = Hra()
+        otrok = Otrokyně("Mira", vek=25, duvera=60, loajalita=50, touha=40, charakter="subka")
+        duvera_pred = otrok.duvera
+        loajalita_pred = otrok.loajalita
+        touha_pred = otrok.touha
+
+        with patch("builtins.input", return_value="a"), redirect_stdout(io.StringIO()):
+            self.assertTrue(proved_interakci(otrok, hra.hrac, "rozhovor_od_srdce"))
+            self.assertTrue(proved_interakci(otrok, hra.hrac, "spolecna_prochazka"))
+            self.assertTrue(proved_interakci(otrok, hra.hrac, "vecer_ve_dvou"))
+
+        self.assertGreaterEqual(otrok.duvera, duvera_pred + 19)
+        self.assertGreaterEqual(otrok.loajalita, loajalita_pred + 15)
+        self.assertGreaterEqual(otrok.touha, touha_pred + 9)
+        self.assertEqual(otrok.historie_voleb[-1]["typ"], "combo_vztahu")
+        self.assertEqual(otrok.historie_voleb[-1]["combo_id"], "duverny_vecer")
+
+    def test_vztahove_combo_se_neopakue_v_tomtez_dni(self):
+        from game.interakce import proved_interakci
+
+        hra = Hra()
+        otrok = Otrokyně("Mira", vek=25, duvera=70, loajalita=55, touha=45, charakter="subka")
+
+        with patch("builtins.input", return_value="a"), redirect_stdout(io.StringIO()):
+            for _ in range(2):
+                self.assertTrue(proved_interakci(otrok, hra.hrac, "rozhovor_od_srdce"))
+                self.assertTrue(proved_interakci(otrok, hra.hrac, "spolecna_prochazka"))
+                self.assertTrue(proved_interakci(otrok, hra.hrac, "vecer_ve_dvou"))
+
+        combo_zaznamy = [
+            z for z in otrok.historie_voleb
+            if z.get("typ") == "combo_vztahu" and z.get("combo_id") == "duverny_vecer"
+        ]
+        self.assertEqual(len(combo_zaznamy), 1)
+
     def test_pronajata_postava_nemuze_otevrit_podmenu_interakci(self):
         from game.interakce import zobraz_interakce
 

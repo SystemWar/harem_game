@@ -37,6 +37,70 @@ PORADI_KATEGORII = (
     "Zkoušky a rituály",
 )
 
+VZTAHOVA_COMBA = (
+    {
+        "id": "duverny_vecer",
+        "nazev": "Důvěrný večer",
+        "sekvence": ("rozhovor_od_srdce", "spolecna_prochazka", "vecer_ve_dvou"),
+        "bonusy": {"duvera": 6, "loajalita": 4, "touha": 3},
+        "zprava": "Vzájemná otevřenost se proměnila v hlubší pouto.",
+    },
+    {
+        "id": "tanecni_jiskra",
+        "nazev": "Taneční jiskra",
+        "sekvence": ("podpora_snu", "spolecny_tanec", "intimni_polibek"),
+        "bonusy": {"duvera": 4, "loajalita": 4, "touha": 5},
+        "zprava": "Sdílený cíl i rytmus probudily výraznou chemii.",
+    },
+)
+
+
+def _aplikuj_vztahove_combo(otrok: Otrokyně, hrac: Hrac):
+    den = getattr(hrac, "den", 0)
+    historie = [
+        zaznam
+        for zaznam in getattr(otrok, "historie_voleb", [])
+        if isinstance(zaznam, dict)
+        and zaznam.get("typ") == "interakce"
+        and zaznam.get("den") == den
+        and zaznam.get("akce_id")
+    ]
+    provedene = tuple(zaznam["akce_id"] for zaznam in historie)
+    if len(provedene) < 3:
+        return
+
+    combo_dnes = {
+        zaznam.get("combo_id")
+        for zaznam in getattr(otrok, "historie_voleb", [])
+        if isinstance(zaznam, dict)
+        and zaznam.get("typ") == "combo_vztahu"
+        and zaznam.get("den") == den
+    }
+    for combo in VZTAHOVA_COMBA:
+        if combo["id"] in combo_dnes:
+            continue
+        sekvence = combo["sekvence"]
+        if tuple(provedene[-len(sekvence):]) != sekvence:
+            continue
+        for stat, hodnota in combo["bonusy"].items():
+            otrok.zvysit_stat(stat, hodnota)
+        otrok.zaznamenej_volbu(
+            "combo_vztahu",
+            combo["nazev"],
+            den,
+            combo_id=combo["id"],
+            akce=list(sekvence),
+        )
+        bonusy = ", ".join(
+            f"{NAZVY_STATISTIK.get(stat, stat)} +{hodnota}"
+            for stat, hodnota in combo["bonusy"].items()
+        )
+        tisk_ok(
+            f"Combo vztahu aktivováno: {combo['nazev']} — {bonusy}. "
+            f"{combo['zprava']}"
+        )
+        return
+
 
 def _kategorie(akce):
     return akce.get("kategorie") or KATEGORIE_PODLE_TYPU.get(
@@ -144,8 +208,13 @@ def proved_interakci(otrok: Otrokyně, hrac: Hrac, akce_id: str):
 
     otrok.aktualizuj_fazi()
     otrok.zaznamenej_volbu(
-        "interakce", akce["nazev"], getattr(hrac, "den", 0)
+        "interakce",
+        akce["nazev"],
+        getattr(hrac, "den", 0),
+        akce_id=akce["id"],
+        kategorie_akce=_kategorie(akce),
     )
+    _aplikuj_vztahove_combo(otrok, hrac)
     tisk_ok(f"Provedeno: {akce['nazev']} (charakter: {nazev_charakteru(getattr(otrok, 'charakter', 'subka'))})")
     try:
         from game.ai_dialog import vypis_dialog, typ_z_akce

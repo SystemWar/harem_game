@@ -202,6 +202,9 @@ pro dospělé; u dobrovolných intimních aktivit je nutná důvěra a výslovn�
 Odmítnutí nic nestojí. Hromadná interakce erotické možnosti nenabízí a vynechá
 postavy na nájmu nebo mimo provoz. Během nájmu nejsou dostupná ani zvláštní
 podmenu interakcí.
+Některé vztahové sekvence aktivují navíc **combo bonus** (např. rozhovor →
+procházka → večer ve dvou), který přidá extra důvěru, loajalitu a touhu.
+Stejné combo lze získat jen jednou za den pro každou postavu.
 
 ### Podání drog (podmenu Drogy)
 

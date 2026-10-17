@@ -181,10 +181,11 @@ Příběh se rozvíjí rozhovory a důvěrou; hráč může naslouchat nebo nab�
 pomoc, ale rozhodnutí postavy zůstává její. Osobní deník (volba **13**) shrnuje
 její přání, stav příběhu a důležité volby. Volba **14** ukazuje graf statistik
 v čase; hodnoty se zaznamenávají po významných interakcích a při uzavření dne.
-Volba **15** nabízí dospělé postavě čtyři dobrovolné, neexplicitní intimní
-aktivity: společnou lázeň, soukromou masáž, večer při víně a vášnivou noc.
-Každá má vlastní cenu, požadovanou úroveň důvěry a vztahové účinky; při
-nedostatku důvěry, energie nebo při pracovním závazku se aktivita neprovede.
+Volba **15** nabízí dospělé postavě sedm dobrovolných, neexplicitních intimních
+aktivit: společnou lázeň, soukromou masáž, večer při víně, vášnivou noc,
+svůdný tanec, koupel při svíčkách a líné ráno. Některé povahy přidají vlastní
+reakci. Každá aktivita má vlastní cenu, požadovanou úroveň důvěry a vztahové
+účinky; při nedostatku důvěry, energie nebo při pracovním závazku se neprovede.
 Hráč musí každou nabídku potvrdit a odmítnutí nemá žádný trest ani spotřebu.
 
 Vybrané povahy poskytují i praktické schopnosti: badatelka zlevňuje výzkum,

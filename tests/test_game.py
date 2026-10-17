@@ -115,6 +115,24 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(otrok.historie_voleb[-1]["typ"], "intimita_odmítnuto")
         self.assertIn("Odmítla:", otrok.historie_voleb[-1]["volba"])
 
+    def test_nove_smyslne_scenky_maji_cenu_a_povahove_reakce(self):
+        from game.intimita_rozsireni import INTIMNI_AKTIVITY, nabidnout_intimni_chvili
+
+        self.assertTrue({"tanec", "svicky", "ranni_probuzeni"} <= set(INTIMNI_AKTIVITY))
+        hra = Hra()
+        otrok = Otrokyně("Lia", vek=25, charakter="kurtizana", duvera=70)
+        hra.harem.pridat(otrok)
+        energie_pred = hra.hrac.sex_energy
+        zlato_pred = hra.hrac.gold
+        vystup = io.StringIO()
+
+        with patch("builtins.input", side_effect=["5", "a", ""]), redirect_stdout(vystup):
+            self.assertTrue(nabidnout_intimni_chvili(hra, otrok))
+
+        self.assertEqual(hra.hrac.sex_energy, energie_pred - 7)
+        self.assertEqual(hra.hrac.gold, zlato_pred - 20)
+        self.assertIn("sama určila tempo", vystup.getvalue())
+
     def test_intimni_chvile_nejsou_dostupne_maloletým_nebo_pri_najmu(self):
         from game.intimita_rozsireni import nabidnout_intimni_chvili
 

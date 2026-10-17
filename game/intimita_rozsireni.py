@@ -58,6 +58,54 @@ INTIMNI_AKTIVITY = {
             "vás propojila víc než cokoliv předtím."
         ),
     },
+    "tanec": {
+        "nazev": "Soukromý svůdný tanec",
+        "cena_sex": 7,
+        "cena_gold": 20,
+        "min_duvera": 30,
+        "popis": "Tlumené svíce, hedvábné závoje a pomalý tanec jen pro tebe.",
+        "efekt": {"touha": 18, "duvera": 7, "loajalita": 4},
+        "text_odmitnuti": "dnes nemá náladu tančit před někým jiným než sama pro sebe.",
+        "text_prijmuti": (
+            "se začala pomalu pohybovat v rytmu tiché hudby. Závoje jí klouzaly po kůži, "
+            "její pohled se tvého nepustil a vzduch v komnatě zhoustl napětím."
+        ),
+    },
+    "svicky": {
+        "nazev": "Koupel při svíčkách a polibky",
+        "cena_sex": 9,
+        "cena_gold": 10,
+        "min_duvera": 45,
+        "popis": "Voda zalitá světlem svíček, dlouhé polibky a něžné doteky.",
+        "efekt": {"touha": 20, "duvera": 12, "loajalita": 8, "hp": 10},
+        "text_odmitnuti": "by si pro takovou blízkost přála nejdřív více času a důvěry.",
+        "text_prijmuti": (
+            "se k tobě v teplé vodě přitiskla. Svíčky vrhaly zlaté odlesky na její ramena, "
+            "a mezi polibky se tiše rozesmála, než se světlo zdálo ztlumit samo."
+        ),
+    },
+    "ranni_probuzeni": {
+        "nazev": "Líné ráno v posteli",
+        "cena_sex": 10,
+        "cena_gold": 0,
+        "min_duvera": 60,
+        "popis": "Pomalé probouzení, objetí pod přikrývkami a ráno, které se nechce končit.",
+        "efekt": {"touha": 18, "duvera": 14, "loajalita": 10, "submisivita": 4},
+        "text_odmitnuti": "si to zatím nedovede představit; potřebuje s tebou sdílet víc společných chvil.",
+        "text_prijmuti": (
+            "se ráno přitulila blíž a zašeptala, ať ještě nikam nechodíš. Mezi hedvábím "
+            "a jejími doteky ztratil čas význam a závěsy zůstaly zatažené až do poledne."
+        ),
+    },
+}
+
+POVAHOVE_REAKCE = {
+    "kurtizana": "Se sebejistým úsměvem sama určila tempo večera a ty ses jen poddal.",
+    "nymfomanka": "Její dychtivost tě nechala bez dechu a každý dotek vracela s úrokem.",
+    "umelkyne": "Po všem si tiše pobrukovala melodii, kterou večer inspiroval.",
+    "diplomatka": "Mezi polibky vtipně vyjednávala, kdo smí rozhodnout o příští noci.",
+    "amazonka": "Zpočátku se tě snažila přemoci, ale nakonec se nechala vést s hrdým smíchem.",
+    "carodejka": "Nad postelí se vznášela světýlka, která vyčarovala sama od vzrušení.",
 }
 
 
@@ -175,6 +223,9 @@ def nabidnout_intimni_chvili(hra, otrok):
     clear()
     hlavicka("Smyslné spojení")
     print(f"\n{MAGENTA}♥ {otrok.jmeno} {info['text_prijmuti']}{NC}\n")
+    reakce = POVAHOVE_REAKCE.get(char_id)
+    if reakce:
+        print(f"{MAGENTA}{reakce}{NC}\n")
     tisk_ok(
         f"Vztah s {otrok.jmeno} se prohloubil! "
         f"Romance: {otrok.romance_body}/100 ({otrok.romance_stav}), "

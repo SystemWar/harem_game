@@ -1333,14 +1333,14 @@ class HraTesty(unittest.TestCase):
         vystup = io.StringIO()
         with patch("builtins.input", side_effect=["x", "0"]), redirect_stdout(vystup):
             obchod(hra)
-        self.assertIn("Neplatná volba. Zadej 0, 1, 2, 3 nebo 9.", vystup.getvalue())
+        self.assertIn("Neplatná volba. Zadej 0, 99 nebo jednu z nabízených položek.", vystup.getvalue())
 
         hra.mafie.korupce = 30
         zlato_pred = hra.hrac.gold
         with patch("builtins.input", side_effect=["x", "2", "0", ""]), \
              redirect_stdout(vystup):
             cerny_trh(hra)
-        self.assertIn("Neplatná volba. Zadej číslo od 0 do 7.", vystup.getvalue())
+        self.assertIn("Neplatná volba. Zadej číslo od 0 do 11.", vystup.getvalue())
         self.assertEqual(hra.hrac.gold, zlato_pred - 120)
 
     def test_cerny_trh_serum_overuje_vyber_a_umozni_zruseni(self):
@@ -1717,11 +1717,11 @@ class HraTesty(unittest.TestCase):
                 hra, normalizuj_volbu("#"), _obnov_hru_runtime(hra)
             )
         self.assertTrue(all(
-            hra.hrac.skilly[klic] == hodnota + 10
+            hra.hrac.skilly[klic] == hodnota + 100
             for klic, hodnota in dovednosti_pred.items()
         ))
-        self.assertEqual(hra.hrac.skill_body, skill_body_pred + 10)
-        self.assertEqual(hra.vyzkum.body, vyzkum_body_pred + 10)
+        self.assertEqual(hra.hrac.skill_body, skill_body_pred + 100)
+        self.assertEqual(hra.vyzkum.body, vyzkum_body_pred + 100)
 
         from models.fortress import PEVNOSTNI_BUDOVY
         hra.pevnost.budovy["pila"] = 3

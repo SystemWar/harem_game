@@ -413,13 +413,15 @@ def _obsluz_volbu_hlavniho_menu(
         _pockej_na_enter()
     elif volba == "cheat_dovednosti":
         for dovednost in hra.hrac.skilly:
-            hra.hrac.skilly[dovednost] += 10
-        hra.hrac.skill_body += 10
-        hra.vyzkum.pridej_body(10)
+            hra.hrac.skilly[dovednost] += 100
+        hra.hrac.skill_body += 100
+        hra.vyzkum.pridej_body(100)
+        for frakce in hra.frakce.frakce.values():
+            frakce.reputace = 100
         tisk_ok(
-            f"Cheat aktivován: +10 ke každé dovednosti "
-            f"({len(hra.hrac.skilly)} dovedností), bojové zdatnosti "
-            "a výzkumných bodů."
+            f"Cheat aktivován: +100 ke každé dovednosti "
+            f"({len(hra.hrac.skilly)} dovedností), bojové zdatnosti, "
+            "+100 výzkumných bodů a reputace 100% u všech frakcí."
         )
         _pockej_na_enter()
     elif volba == "cheat_budovy":

@@ -31,6 +31,9 @@ class FrakcniSystem:
         "kult_krve": Frakce("Kult Krvavého Měsíce", "Fanatičtí uctívači temných sil a rituálů", 0),
         "syndikat_stinu": Frakce("Syndikát Nočních stínů", "Cech zlodějů, špehů a nájemných vrahů", 5),
         "cech_kurtizan": Frakce("Cech kurtizán", "Vlivná síť nevěstinců, společnic a šlechty", 15),
+        "narkomani": Frakce("Narkomani", "Lidé zasažení městskými omamnými látkami, adrenalinovými spady a nočními krizemi", 0),
+        "cyberpunkaci": Frakce("Cyberpunkáci", "Neonový podsvět, umělá postava, hackeři a zlaté drahy v senzorickém městě", 0),
+        "nymfomanky": Frakce("Nymfomanky", "Kult vášní, zcela volných hranic a neukojitelné smyslnosti", 0),
     })
 
     def to_dict(self):

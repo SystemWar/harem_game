@@ -211,6 +211,44 @@ class ZivySvetTesty(unittest.TestCase):
             prijem_bezpecnych_mest,
         )
 
+    def test_plna_fronta_nezahodi_dokonceny_frakcni_cil(self):
+        hra = Hra()
+        hra.zivy_svet.nabidky = [
+            {
+                "frakce_id": "policie",
+                "frakce_nazev": "Policie",
+                "cilek": "hlídky",
+                "text": "Situace",
+                "postava": "Mira",
+            }
+            for _ in range(10)
+        ]
+        hra.zivy_svet.frakcni_cile["policie"]["cil"] = 1
+        hra.hrac.den = 1
+
+        hra.zivy_svet.posun_den(hra)
+        obnovena = Hra.from_dict(hra.to_dict())
+
+        self.assertEqual(len(hra.zivy_svet.nabidky), 10)
+        self.assertEqual(
+            obnovena.zivy_svet.frakcni_cile["policie"]["postup"],
+            1,
+        )
+
+    def test_ignorovana_mestska_udalost_ma_trvaly_dusledek(self):
+        hra = Hra()
+        hra.hrac.den = 4
+        hra.zivy_svet.posun_den(hra)
+        udalost = hra.zivy_svet.udalosti_mesta[0]
+        mesto = hra.zivy_svet.mesta[udalost["mesto_id"]]
+        prosperita_pred = mesto.prosperita
+
+        with patch("builtins.input", return_value="0"), redirect_stdout(io.StringIO()):
+            self.assertTrue(hra.zivy_svet._vyres_udalost_mesta(hra, udalost))
+
+        self.assertEqual(mesto.prosperita, prosperita_pred - 2)
+        self.assertIn("bez zásahu", hra.zivy_svet.historie[-1]["text"])
+
 
 if __name__ == "__main__":
     unittest.main()

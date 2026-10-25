@@ -184,8 +184,8 @@ class ZivySvetSystem:
                 self.frakcni_cile[frakce_id] = cil
             cil.setdefault("nazev", nazev)
             cil.setdefault("popis", popis)
-            cil["postup"] = min(2, _kladne_cislo(cil.get("postup", 0)))
             cil["cil"] = max(1, min(10, _kladne_cislo(cil.get("cil", 3))))
+            cil["postup"] = min(cil["cil"], _kladne_cislo(cil.get("postup", 0)))
         self.postavy = [p for p in self.postavy if isinstance(p, dict)]
         for index, postava in enumerate(self.postavy):
             postava.setdefault("id", f"npc_{index}")
@@ -263,7 +263,7 @@ class ZivySvetSystem:
                 isinstance(nabidka.get(klic), str)
                 for klic in ("frakce_id", "frakce_nazev", "cilek", "text", "postava")
             )
-        ][-10:]
+        ]
         self.historie = [
             zaznam for zaznam in self.historie
             if isinstance(zaznam, dict)
@@ -351,16 +351,22 @@ class ZivySvetSystem:
             if zmena_kontroly:
                 zpravy.append(zmena_kontroly)
             cil = self.frakcni_cile[frakce_id]
+            postup_pred = cil["postup"]
             cil["postup"] = min(cil["cil"], int(cil.get("postup", 0)) + 1)
             if cil["postup"] >= cil["cil"]:
-                cil["postup"] = 0
-                nabidka = self._vytvor_nabidku(frakce_id, den)
-                self.nabidky.append(nabidka)
-                self.nabidky = self.nabidky[-10:]
-                zpravy.append(
-                    f"{nabidka['frakce_nazev']} pokročila ve svém cíli: "
-                    f"{nabidka['cilek']}. Na rozhodnutí čeká nová situace."
-                )
+                if len(self.nabidky) < 10:
+                    cil["postup"] = 0
+                    nabidka = self._vytvor_nabidku(frakce_id, den)
+                    self.nabidky.append(nabidka)
+                    zpravy.append(
+                        f"{nabidka['frakce_nazev']} pokročila ve svém cíli: "
+                        f"{nabidka['cilek']}. Na rozhodnutí čeká nová situace."
+                    )
+                elif postup_pred < cil["cil"]:
+                    zpravy.append(
+                        f"{FRAKCNI_CILE[frakce_id][0]} dokončila cíl, ale "
+                        "čeká na uvolnění fronty rozhodnutí."
+                    )
         self.dalsi_frakce = (self.dalsi_frakce + 1) % len(frakce_ids)
 
         if den % 4 == 0 and len(self.udalosti_mesta) < 3:
@@ -498,6 +504,8 @@ class ZivySvetSystem:
         except EOFError:
             return False
         if volba == "0":
+            mesto.uprav(**definice["zanik"])
+            tisk_info("Situaci ponecháváš bez zásahu; městské poměry se zhorší.")
             self._zapis_udalost(udalost, "bez zásahu")
             return True
         try:

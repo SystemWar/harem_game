@@ -165,7 +165,12 @@ def _predelej_misi(hra):
         definice = SPECIALIZACE[ident]
         vytiskni_volbu(str(index), f"{definice['nazev']}: {definice['ukol']}")
     try:
-        volba = int(input("Nová mise: ")) - 1
+        vyber = input("Nová mise: ").strip()
+        if vyber == "0":
+            return
+        volba = int(vyber) - 1
+        if not 0 <= volba < len(moznosti):
+            raise IndexError
         specializace = moznosti[volba]
     except (ValueError, IndexError):
         tisk_chyba("Neplatná mise.")

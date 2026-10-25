@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from game.menu_hlavni import normalizuj_volbu
 from game.save_load import Hra, migrate_save
-from game.zivy_svet import ZivySvetSystem
+from game.zivy_svet import FRAKCNI_AKCE, ZivySvetSystem
 from game.svet import LOKACE
 from data.mesta import MESTA
 from config import YELLOW
@@ -18,12 +18,18 @@ class ZivySvetTesty(unittest.TestCase):
         svet = ZivySvetSystem()
 
         self.assertEqual(set(svet.frakcni_cile), set(FrakcniSystem().frakce))
+        self.assertEqual(set(FRAKCNI_AKCE), set(svet.frakcni_cile))
         obnoveno = ZivySvetSystem.from_dict(svet.to_dict())
         self.assertEqual(obnoveno.frakcni_cile, svet.frakcni_cile)
         self.assertEqual(
             {postava["id"] for postava in obnoveno.postavy},
             {postava["id"] for postava in svet.postavy},
         )
+        for frakce_id in svet.frakcni_cile:
+            self.assertEqual(
+                obnoveno.frakcni_cile[frakce_id]["mesto_id"],
+                svet.frakcni_cile[frakce_id]["mesto_id"],
+            )
 
     def test_denni_tah_pohybuje_npc_a_neopakuje_se(self):
         hra = Hra()
@@ -248,6 +254,47 @@ class ZivySvetTesty(unittest.TestCase):
 
         self.assertEqual(mesto.prosperita, prosperita_pred - 2)
         self.assertIn("bez zásahu", hra.zivy_svet.historie[-1]["text"])
+
+    def test_fakcni_cil_pusobi_na_mesto_kde_ma_fakce_vliv(self):
+        hra = Hra()
+        mesto = hra.zivy_svet.mesta["vychodni_brod"]
+        bezpeci_pred = mesto.bezpeci
+        stabilita_pred = mesto.stabilita
+
+        zprava = hra.zivy_svet._vykonej_cil_fakce("policie")
+
+        self.assertEqual(mesto.bezpeci, bezpeci_pred + 1)
+        self.assertEqual(mesto.stabilita, stabilita_pred + 1)
+        self.assertEqual(
+            hra.zivy_svet.frakcni_cile["policie"]["mesto_id"],
+            "vychodni_brod",
+        )
+        self.assertIn("Východní Brod", zprava)
+
+    def test_fakcni_akce_maji_omezeny_a_odlisny_dopad(self):
+        hra = Hra()
+        stare_mesto = hra.zivy_svet.mesta["stare_mesto"]
+        bezpeci_pred = stare_mesto.bezpeci
+        prosperita_pred = stare_mesto.prosperita
+
+        hra.zivy_svet._vykonej_cil_fakce("podsveti")
+
+        self.assertEqual(stare_mesto.prosperita, prosperita_pred + 1)
+        self.assertEqual(stare_mesto.bezpeci, bezpeci_pred - 1)
+
+    def test_automaticky_vyvoj_zustava_v_rozsahu_po_ctyriceti_dnech(self):
+        hra = Hra()
+        for den in range(1, 41):
+            hra.hrac.den = den
+            hra.zivy_svet.posun_den(hra)
+
+        for mesto in hra.zivy_svet.mesta.values():
+            for atribut in ("prosperita", "bezpeci", "stabilita"):
+                self.assertGreaterEqual(getattr(mesto, atribut), 0)
+                self.assertLessEqual(getattr(mesto, atribut), 100)
+        self.assertLessEqual(len(hra.zivy_svet.udalosti_mesta), 3)
+        self.assertLessEqual(len(hra.zivy_svet.nabidky), 10)
+        self.assertLessEqual(len(hra.zivy_svet.historie), 30)
 
 
 if __name__ == "__main__":

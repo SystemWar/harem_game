@@ -24,6 +24,59 @@ FRAKCNI_CILE = {
     "nymfomanky": ("Uspořádat dobrovolný slavnostní večer", "Organizátorky připravují společenskou akci s jasnými pravidly účasti."),
 }
 
+FRAKCNI_AKCE = {
+    "policie": (
+        "posílila hlídky",
+        "bezpeci",
+        {"bezpeci": 1, "stabilita": 1},
+    ),
+    "podsveti": (
+        "rozšířilo noční obchod",
+        "prosperita",
+        {"prosperita": 1, "bezpeci": -1},
+    ),
+    "cirkev": (
+        "zprostředkovala veřejné smírčí jednání",
+        "stabilita",
+        {"stabilita": 1, "bezpeci": 1},
+    ),
+    "obchodnici": (
+        "otevřeli novou obchodní trasu",
+        "prosperita",
+        {"prosperita": 1, "bezpeci": 1},
+    ),
+    "kult_krve": (
+        "vyvolal neklid kolem tajného rituálu",
+        "stabilita",
+        {"stabilita": -1, "bezpeci": -1},
+    ),
+    "syndikat_stinu": (
+        "rozšířil síť ověřených zpráv",
+        "stabilita",
+        {"stabilita": 1},
+    ),
+    "cech_kurtizan": (
+        "uspořádal dobrovolný společenský večer",
+        "prosperita",
+        {"prosperita": 1, "stabilita": 1},
+    ),
+    "narkomani": (
+        "zajistili bezpečnější pouliční pomoc",
+        "bezpeci",
+        {"bezpeci": 1, "stabilita": 1},
+    ),
+    "cyberpunkaci": (
+        "opravili městské komunikační uzly",
+        "stabilita",
+        {"stabilita": 1, "prosperita": 1},
+    ),
+    "nymfomanky": (
+        "uspořádaly slavnost s jasnými pravidly účasti",
+        "prosperita",
+        {"prosperita": 1, "stabilita": 1},
+    ),
+}
+
 VYCHOZI_POSTAVY = (
     {
         "id": "mira_lecitelka", "jmeno": "Mira", "role": "Potulná léčitelka",
@@ -186,6 +239,15 @@ class ZivySvetSystem:
             cil.setdefault("popis", popis)
             cil["cil"] = max(1, min(10, _kladne_cislo(cil.get("cil", 3))))
             cil["postup"] = min(cil["cil"], _kladne_cislo(cil.get("postup", 0)))
+            mesto_id = cil.get("mesto_id")
+            if mesto_id not in MESTA:
+                mesto_id = _prvni_mesto_frakce(frakce_id)
+            cil["mesto_id"] = mesto_id
+            cil["posledni_akce"] = (
+                cil.get("posledni_akce")
+                if isinstance(cil.get("posledni_akce"), str)
+                else ""
+            )
         self.postavy = [p for p in self.postavy if isinstance(p, dict)]
         for index, postava in enumerate(self.postavy):
             postava.setdefault("id", f"npc_{index}")
@@ -347,6 +409,9 @@ class ZivySvetSystem:
             vedlejsi_frakce,
         )
         for frakce_id in dnesni_frakce:
+            zprava_cile = self._vykonej_cil_fakce(frakce_id)
+            if zprava_cile:
+                zpravy.append(zprava_cile)
             zmena_kontroly = self._rozsir_vliv_fakce(frakce_id, den)
             if zmena_kontroly:
                 zpravy.append(zmena_kontroly)
@@ -408,6 +473,34 @@ class ZivySvetSystem:
         self.historie.extend({"den": den, "text": zprava} for zprava in zpravy)
         self.historie = self.historie[-30:]
         return zpravy
+
+    def _vykonej_cil_fakce(self, frakce_id):
+        """Nechá frakci vykonat malý, průběžný krok jejího městského cíle."""
+        akce = FRAKCNI_AKCE.get(frakce_id)
+        if not akce:
+            return ""
+        popis, metrika, dopady = akce
+        mesta_vlivu = {
+            _mesto_lokace(lokace_id)
+            for lokace_id in FRAKCNI_ZONY.get(frakce_id, ())
+            if lokace_id in LOKACE
+        }
+        kandidati = [
+            mesto_id for mesto_id in MESTA
+            if not mesta_vlivu or mesto_id in mesta_vlivu
+        ]
+        mesto_id = vyber_nejlepsi_uzitek(
+            (klic, 100 - getattr(self.mesta[klic], metrika))
+            for klic in kandidati
+        )
+        if not mesto_id:
+            return ""
+        mesto = self.mesta[mesto_id]
+        mesto.uprav(**dopady)
+        cil = self.frakcni_cile[frakce_id]
+        cil["mesto_id"] = mesto_id
+        cil["posledni_akce"] = popis
+        return f"{mesto.nazev}: {FRAKCNI_CILE[frakce_id][0]} {popis}."
 
     def _rozsir_vliv_fakce(self, frakce_id, den):
         lokace = tuple(
@@ -605,7 +698,12 @@ class ZivySvetSystem:
             for frakce_id, cil in self.frakcni_cile.items():
                 frakce = hra.frakce.frakce.get(frakce_id)
                 jmeno = frakce.nazev if frakce else frakce_id
-                print(f"  {jmeno}: {cil['nazev']} [{cil['postup']}/{cil['cil']}]")
+                mesto = self.mesta[cil["mesto_id"]].nazev
+                akce = f" — {cil['posledni_akce']}" if cil["posledni_akce"] else ""
+                print(
+                    f"  {jmeno}: {cil['nazev']} [{cil['postup']}/{cil['cil']}] "
+                    f"→ {mesto}{akce}"
+                )
             print("\nPostavy ve městě:")
             for postava in self.postavy:
                 print(
@@ -736,3 +834,10 @@ def _vychozi_frakce_lokace(lokace_id):
         if lokace_id in lokace:
             return frakce_id
     return "policie"
+
+
+def _prvni_mesto_frakce(frakce_id):
+    for lokace_id in FRAKCNI_ZONY.get(frakce_id, ()):
+        if lokace_id in LOKACE:
+            return _mesto_lokace(lokace_id)
+    return "stare_mesto"

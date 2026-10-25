@@ -140,7 +140,10 @@ barevně odlišuje a hráč může vliv změnit také rozhodnutími. Každé čt
 vzniká opakující se městská situace (karavana, most nebo hlídky) s placeným i
 bezplatným řešením. Nevyřešené situace časem zhorší stav města. Každých pět dní
 se obchodní příjem odvíjí od prosperity, bezpečí a stability; nebezpečná města
-karavany zastaví.
+karavany zastaví. Každý den dvě frakce provedou malý krok svého cíle v městě,
+kde mají vliv: policie posiluje bezpečí, obchodníci rozvíjejí prosperitu,
+Podsvětí rozšiřuje noční obchod a některé frakce mohou město i destabilizovat.
+Přehled živého světa ukazuje cílové město i poslední akci každé frakce.
 Vojáky a kapitány najímáš ve správě podsvětí (`3`); jejich denní žold a rozkazy
 lze spravovat společně s novým personálem. Průzkumníci objevují mapu, heroldi
 šíří pověst, správci zajišťují příjem a zdravotníci či velitelé pomáhají při

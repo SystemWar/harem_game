@@ -57,6 +57,7 @@ FRAKCNI_ZONY = {
         "akademie", "akademicke_namesti", "kovarensky_okrsek",
     ),
     "nymfomanky": ("botanicke_zahrady",),
+    "gembleri": ("cervena_ctvrt", "pulnocni_trh", "podzemni_arena"),
 }
 
 LOKACE_VYCHODNIHO_BRODU = {

@@ -27,15 +27,19 @@ def menu_kasina(hra):
             )
             vytiskni_volbu("1", "Hrát kostky — tipni si, zda součet bude pod/nad 7")
             vytiskni_volbu("2", "Hrát jednadvacet — přibliž se k 21 bez přetažení")
+            vytiskni_volbu("3", "Duel v kostkách — porovnej součet se soupeřem")
             if kasino.uroven < MAX_UROVEN:
                 cena = _cena_vylepseni(kasino.uroven)
                 vytiskni_volbu(
-                    "3",
+                    "4",
                     f"Vylepšit kasino na úroveň {kasino.uroven + 1} ({cena} zl.)",
                 )
         else:
             vytiskni_volbu("1", f"Otevřít kasino ({CENA_OTEVRENI} zl.)")
-        vytiskni_volbu("4", "Historie posledních her")
+        vytiskni_volbu(
+            "5" if kasino.otevreno else "4",
+            "Historie posledních her",
+        )
         vytiskni_volbu("0", "Zpět")
         try:
             volba = input("> ").strip()
@@ -45,7 +49,7 @@ def menu_kasina(hra):
             return
         if not kasino.otevreno and volba == "1":
             otevri_kasino(hra)
-        elif kasino.otevreno and volba in ("1", "2"):
+        elif kasino.otevreno and volba in ("1", "2", "3"):
             sazka = _nacti_sazku(hra)
             if sazka is None:
                 continue
@@ -53,11 +57,13 @@ def menu_kasina(hra):
                 tip = _nacti_tip_kostek()
                 if tip:
                     hraj_kostky(hra, sazka, tip)
-            else:
+            elif volba == "2":
                 hraj_jednadvacet(hra, sazka)
-        elif kasino.otevreno and volba == "3" and kasino.uroven < MAX_UROVEN:
+            else:
+                hraj_duel_kostek(hra, sazka)
+        elif kasino.otevreno and volba == "4" and kasino.uroven < MAX_UROVEN:
             vylepsi_kasino(hra)
-        elif volba == "4":
+        elif volba == ("5" if kasino.otevreno else "4"):
             zobraz_historii(kasino)
         else:
             tisk_chyba("Tato volba teď není dostupná.")
@@ -73,6 +79,8 @@ def otevri_kasino(hra):
     hra.hrac.gold -= CENA_OTEVRENI
     kasino.otevreno = True
     kasino.uroven = 1
+    _zmen_reputaci_gembleru(hra, 5)
+    _zmen_vliv_gembleru(hra, 5)
     tisk_ok(
         "Kasino U Červené čtvrti je otevřeno. "
         "První stůl má limit sázky 100 zl."
@@ -91,6 +99,7 @@ def vylepsi_kasino(hra):
         return False
     hra.hrac.gold -= cena
     kasino.uroven += 1
+    _zmen_reputaci_gembleru(hra, 2)
     tisk_ok(
         f"Kasino vylepšeno na úroveň {kasino.uroven}; "
         f"limit sázek je nyní {kasino.limit_sazky} zl. "
@@ -119,6 +128,39 @@ def hraj_kostky(hra, sazka, tip):
         _vyhodnot_sazku(
             hra, "Kostky", sazka, vyhra,
             f"Padlo {prvni} + {druha} = {soucet}; tipoval jsi {tip} 7.",
+        )
+    return True
+
+
+def hraj_duel_kostek(hra, sazka):
+    """Dva hráči hodí dvěma kostkami; sázkou je pouze herní zlato."""
+    if not _over_sazku(hra, sazka):
+        return False
+    if not _odeber_sazku(hra, sazka):
+        return False
+    hrac_hod = (random.randint(1, 6), random.randint(1, 6))
+    souper_hod = (random.randint(1, 6), random.randint(1, 6))
+    hrac_soucet = sum(hrac_hod)
+    souper_soucet = sum(souper_hod)
+    print(
+        f"Tvůj hod {hrac_hod[0]} + {hrac_hod[1]} = {hrac_soucet}; "
+        f"soupeř {souper_hod[0]} + {souper_hod[1]} = {souper_soucet}."
+    )
+    if hrac_soucet == souper_soucet:
+        hra.hrac.gold += sazka
+        hra.kasino.remizy += 1
+        _zaznam_hry(
+            hra, "Duel v kostkách", sazka, 0, "Remíza",
+            f"Oba hodili {hrac_soucet}.",
+        )
+        tisk_info("Stejný součet — sázka se vrací.")
+    else:
+        _vyhodnot_sazku(
+            hra,
+            "Duel v kostkách",
+            sazka,
+            hrac_soucet > souper_soucet,
+            f"Tvůj součet {hrac_soucet}, soupeřův {souper_soucet}.",
         )
     return True
 
@@ -233,6 +275,20 @@ def _zaznam_hry(hra, hra_nazev, sazka, cisty_vysledek, vysledek, detail):
         "detail": detail,
     })
     kasino.historie = kasino.historie[-20:]
+    _zmen_reputaci_gembleru(hra, 1)
+    _zmen_vliv_gembleru(hra, 1)
+
+
+def _zmen_reputaci_gembleru(hra, zmena):
+    frakce = getattr(getattr(hra, "frakce", None), "frakce", {}).get("gembleri")
+    if frakce:
+        frakce.zmenit(zmena)
+
+
+def _zmen_vliv_gembleru(hra, zmena):
+    svet = getattr(hra, "zivy_svet", None)
+    if svet:
+        svet._uprav_vliv_lokace("cervena_ctvrt", "gembleri", zmena)
 
 
 def _over_sazku(hra, sazka):

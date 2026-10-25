@@ -71,15 +71,21 @@ frakční kontrolu a aktuální polohu hráče.
 
 ### Frakce a místní simulace
 
-Deset frakcí sleduje vlastní cíl. Jejich denní činnost může měnit bezpečí,
+Jedenáct frakcí sleduje vlastní cíl. Jejich denní činnost může měnit bezpečí,
 prosperitu či stabilitu měst, postupně ovlivňovat kontrolu lokací a vytvářet
 rozhodovací situace pro hráče. Městské hodnoty se drží v rozsahu 0–100 a jejich
 vzájemné působení znamená, že dlouhodobě nebezpečné či nestabilní město může
 ztrácet prosperitu.
 
-Pět dvojic frakcí má navíc uložené vztahy. Rivalita může způsobit pokles
+Šest dvojic frakcí má navíc uložené vztahy. Rivalita může způsobit pokles
 bezpečí a stability, spojenectví naopak stabilitu posiluje. V nabídce živého
 světa lze vztahy ovlivnit zprostředkováním smíru nebo podporou soupeření.
+
+Nová frakce **Gamblerů** působí v Červené čtvrti, na Půlnočním trhu a
+v podzemní aréně. Sleduje růst hazardních heren; jejich turnaje podporují
+prosperitu, ale mohou zhoršovat stabilitu. Otevření kasina a hry u jeho stolů
+frakci přidávají reputaci i místní vliv. Gamblerové soupeří s policií, která
+se snaží držet pořádek a omezovat následky dluhů.
 
 ### NPC a jejich příběhy
 
@@ -135,6 +141,8 @@ limitu a hráč nemůže vsadit více, než má.
 - **Kostky:** zvol „pod 7“ nebo „nad 7“ při hodu dvěma šestistěnnými kostkami.
   Součet 7 vrací sázku; správný tip vyplácí dvojnásobek vsazené částky včetně
   původní sázky.
+- **Duel v kostkách:** ty i soupeř hodíte dvěma kostkami; vyšší součet bere
+  výhru, při remíze se sázka vrací. Hraje se výhradně o herní zlato.
 - **Jednadvacet:** ber karty nebo zůstaň; eso má hodnotu 11 nebo 1 podle toho,
   co zabrání překročení 21. Krupiér dobírá do 17. Běžná výhra vrací dvojnásobek
   sázky a přirozený blackjack vyplácí čistý zisk 1,5násobku sázky.
@@ -142,7 +150,8 @@ limitu a hráč nemůže vsadit více, než má.
   remíz, celkově vsazené zlato a čistý výsledek. Kasino také přidává
   10 zlata za herní den na každou úroveň.
 
-Výsledky hazardních her používají náhodné hody a ovlivňují pouze herní zlato.
+Výsledky hazardních her používají náhodné hody. Sázky jsou omezené a
+ovlivňují herní zlato; hra nikdy nepoužívá člověka jako sázku ani výhru.
 Před potvrzením sázky se zobrazuje limit i dostupné prostředky.
 
 ## Dominion, ekonomika a frakce

@@ -34,6 +34,11 @@ class FrakcniSystem:
         "narkomani": Frakce("Narkomani", "Lidé zasažení městskými omamnými látkami, adrenalinovými spady a nočními krizemi", 0),
         "cyberpunkaci": Frakce("Cyberpunkáci", "Neonový podsvět, umělá postava, hackeři a zlaté drahy v senzorickém městě", 0),
         "nymfomanky": Frakce("Nymfomanky", "Kult vášní, zcela volných hranic a neukojitelné smyslnosti", 0),
+        "gembleri": Frakce(
+            "Gamblerů",
+            "Spolek lidí závislých na hazardu, který šíří vliv heren a bojuje s dluhy.",
+            0,
+        ),
     })
 
     def to_dict(self):

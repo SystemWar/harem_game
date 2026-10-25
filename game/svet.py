@@ -31,6 +31,7 @@ BARVY_FRAKCI = {
     "narkomani": GRAY,
     "cyberpunkaci": ORANGE,
     "nymfomanky": VIOLET,
+    "gembleri": GOLD,
 }
 
 LOKACE = {

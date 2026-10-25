@@ -22,6 +22,7 @@ FRAKCNI_CILE = {
     "narkomani": ("Omezit pouliční krize", "Dobrovolníci hledají bezpečnější pomoc pro lidi v nouzi."),
     "cyberpunkaci": ("Ovládnout městskou datovou síť", "Technici opravují uzly a obchodují s ověřenými informacemi."),
     "nymfomanky": ("Uspořádat dobrovolný slavnostní večer", "Organizátorky připravují společenskou akci s jasnými pravidly účasti."),
+    "gembleri": ("Rozšířit vliv heren", "Gamblerů lákají další návštěvníky ke stolům a zároveň řeší rostoucí dluhy svých členů."),
 }
 
 FRAKCNI_AKCE = {
@@ -75,6 +76,11 @@ FRAKCNI_AKCE = {
         "prosperita",
         {"prosperita": 1, "stabilita": 1},
     ),
+    "gembleri": (
+        "uspořádali noční turnaj v kostkách",
+        "prosperita",
+        {"prosperita": 1, "stabilita": -1},
+    ),
 }
 
 FRAKCNI_RIVALOVE = (
@@ -83,6 +89,7 @@ FRAKCNI_RIVALOVE = (
     ("cirkev", "kult_krve"),
     ("cech_kurtizan", "nymfomanky"),
     ("narkomani", "cyberpunkaci"),
+    ("gembleri", "policie"),
 )
 
 TRASA_KARAVANY = (

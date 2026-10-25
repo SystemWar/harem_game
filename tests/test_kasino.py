@@ -3,10 +3,18 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-from game.kasino import hraj_jednadvacet, hraj_kostky, otevri_kasino, vylepsi_kasino
+from game.kasino import (
+    hraj_duel_kostek,
+    hraj_jednadvacet,
+    hraj_kostky,
+    otevri_kasino,
+    vylepsi_kasino,
+)
 from game.menu_hlavni import normalizuj_volbu
 from game.save_load import Hra, migrate_save
 from models.kasino import KasinoSystem
+from game.zivy_svet import FRAKCNI_AKCE, ZivySvetSystem
+from models.frakce import FrakcniSystem
 
 
 class KasinoTesty(unittest.TestCase):
@@ -65,6 +73,39 @@ class KasinoTesty(unittest.TestCase):
         self.assertEqual(hra.hrac.gold, 115)
         self.assertEqual(hra.kasino.vyhry, 1)
         self.assertEqual(hra.kasino.cisty_zisk, 15)
+
+    def test_duel_kostek_sazi_jen_zlato_a_vyhra_zvysi_vliv_gembleru(self):
+        hra = Hra()
+        hra.hrac.gold = 100
+        hra.kasino = KasinoSystem(otevreno=True, uroven=1)
+        reputace_pred = hra.frakce.frakce["gembleri"].reputace
+        vliv_pred = hra.zivy_svet.kontrola_lokaci["cervena_ctvrt"].get("gembleri", 0)
+
+        with patch("game.kasino.random.randint", side_effect=[6, 6, 1, 1]), \
+             redirect_stdout(io.StringIO()):
+            self.assertTrue(hraj_duel_kostek(hra, 10))
+
+        self.assertEqual(hra.hrac.gold, 110)
+        self.assertEqual(hra.kasino.historie[-1]["hra"], "Duel v kostkách")
+        self.assertEqual(
+            hra.frakce.frakce["gembleri"].reputace,
+            reputace_pred + 1,
+        )
+        self.assertEqual(
+            hra.zivy_svet.kontrola_lokaci["cervena_ctvrt"]["gembleri"],
+            vliv_pred + 1,
+        )
+
+    def test_nova_frakce_ma_cil_a_migraci_stareho_save(self):
+        frakce = FrakcniSystem()
+        svet = ZivySvetSystem()
+
+        self.assertIn("gembleri", frakce.frakce)
+        self.assertEqual(set(svet.frakcni_cile), set(frakce.frakce))
+        self.assertIn("gembleri", FRAKCNI_AKCE)
+        obnovena = Hra.from_dict(migrate_save({"save_version": 2}))
+        self.assertIn("gembleri", obnovena.frakce.frakce)
+        self.assertIn("gembleri", obnovena.zivy_svet.frakcni_cile)
 
     def test_kasino_se_uklada_a_stary_save_dostane_vychozi_stav(self):
         hra = Hra()

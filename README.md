@@ -49,6 +49,7 @@ savy. Řiď se proto názvy zobrazenými ve své hře; nabídka obsahuje mimo ji
 - pevnost, budovy, ekonomiku, personál a armádu;
 - souboje, arénu, alchymii, crafting a výzkum;
 - kasino v Červené čtvrti s kostkami, jednadvacítkou a rozvojem podniku;
+- fikční drogová laboratoř a pěstírna konopí s výrobou, prodejem a výzkumem;
 - manželství, rodinu, kroniku, kalendář a nastavení.
 
 Terminálové rozhraní používá barevné ASCII ilustrace: profilům postav přidává
@@ -194,6 +195,19 @@ limitu a hráč nemůže vsadit více, než má.
 Výsledky hazardních her používají náhodné hody. Sázky jsou omezené a
 ovlivňují herní zlato; hra nikdy nepoužívá člověka jako sázku ani výhru.
 Před potvrzením sázky se zobrazuje limit i dostupné prostředky.
+
+## Laboratoř a pěstírna
+
+Volba **39** otevře fiktivní provoz laboratoře a pěstírny konopí. Za zlato lze
+vybudovat a až na třetí úroveň rozšířit obě zařízení. Abstraktní sklizeň
+spotřebuje zásoby pevnosti a doplní sklad konopných květů a bylinných zásob;
+laboratoř z nich a z krystalů vyrábí jeden z jedenácti fikčních produktů
+uvedených v herním katalogu. Sklizeň i výroba přidávají výzkumné body.
+
+Produkty a konopné květy lze ze skladu prodávat za pevně stanovené herní ceny.
+Úrovně provozů, sklad, tržby i získané výzkumné body se ukládají s hrou.
+Jde výhradně o abstraktní herní ekonomiku, nikoli o skutečný návod k pěstování
+nebo výrobě drog.
 
 ## Dominion, ekonomika a frakce
 

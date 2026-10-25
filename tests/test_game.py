@@ -1615,12 +1615,13 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("35"), "36")
         self.assertEqual(normalizuj_volbu("36"), "37")
         self.assertEqual(normalizuj_volbu("37"), "38")
+        self.assertEqual(normalizuj_volbu("39"), "40")
         self.assertEqual(normalizuj_volbu("s"), "26")
         self.assertEqual(normalizuj_volbu("q"), "26")
         self.assertEqual(normalizuj_volbu("0"), "0")
         self.assertEqual(
             list(MAPOVANI_CISEL_MENU),
-            [str(cislo) for cislo in range(1, 39)],
+            [str(cislo) for cislo in range(1, 40)],
         )
         self.assertEqual(normalizuj_volbu("$"), "cheat")
         self.assertEqual(normalizuj_volbu("&"), "cheat_suroviny")
@@ -1646,6 +1647,7 @@ class HraTesty(unittest.TestCase):
         self.assertNotIn(":) 💚 Cheat:", vystup.getvalue())
 
         self.assertIn("10)", vystup.getvalue())
+        self.assertIn("Drogová laboratoř a pěstírna konopí", vystup.getvalue())
         self.assertIn("Q)", vystup.getvalue())
         self.assertIn("Hlavní menu / uložit / nahrát / nastavení", vystup.getvalue())
         self.assertIn("🎯 Lov otrokyň", vystup.getvalue())

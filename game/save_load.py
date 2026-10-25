@@ -53,6 +53,7 @@ class Hra:
         self.harem = Harem()
         self.frakce = FrakcniSystem()
         self.mafie = Mafie()
+        self.drogovy_provoz = {}
         self.vyzkum = VyzkumSystem()
         self.questy = QuestSystem()
         self.alchymie = AlchymieSystem()
@@ -106,6 +107,7 @@ class Hra:
             "harem": self.harem.to_dict(),
             "frakce": self.frakce.to_dict(),
             "mafie": self.mafie.to_dict(),
+            "drogovy_provoz": self.drogovy_provoz,
             "vyzkum": self.vyzkum.to_dict(),
             "questy": self.questy.to_dict(),
             "alchymie": self.alchymie.to_dict(),
@@ -145,6 +147,8 @@ class Hra:
         hra.harem = Harem.from_dict(sekce["harem"])
         hra.frakce = FrakcniSystem.from_dict(sekce["frakce"])
         hra.mafie = Mafie.from_dict(sekce["mafie"])
+        if isinstance(data.get("drogovy_provoz"), dict):
+            hra.drogovy_provoz = data["drogovy_provoz"]
         zajisti_osudy(hra.harem)
         if isinstance(data.get("vyzkum"), dict):
             hra.vyzkum = VyzkumSystem.from_dict(data["vyzkum"])

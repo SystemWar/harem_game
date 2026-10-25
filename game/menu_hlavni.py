@@ -50,6 +50,7 @@ POLOZKY_HLAVNIHO_MENU = (
     ("37", "🌍 Živý svět, cíle frakcí a NPC"),
     ("38", "👥 Najímání personálu a mise"),
     ("39", "🎲 Kasino — kostky, jednadvacet a sázky"),
+    ("40", "⚗️ Drogová laboratoř a pěstírna konopí"),
 )
 
 ZKRATKY_HLAVNIHO_MENU = {
@@ -73,7 +74,7 @@ MAPOVANI_CISEL_MENU = {
 
 KATEGORIE_HLAVNIHO_MENU = (
     ("👑 HARÉM & VZTAHY", (1, 7, 14, 20, 22, 27, 29, 30)),
-    ("🏰 PANSTVÍ & IMPÉRIUM", (2, 3, 5, 6, 12, 15, 38)),
+    ("🏰 PANSTVÍ & IMPÉRIUM", (2, 3, 5, 6, 12, 15, 38, 39)),
     ("🗺️ SVĚT, FRAKCE & DOBRODRUŽSTVÍ", (8, 9, 10, 13, 21, 26, 28, 31, 32, 33, 34, 35, 36, 37)),
     ("⚙️ POSTAVA & PROVOZ", (4, 11, 16, 17, 18, 19, 23, 24, 25)),
 )

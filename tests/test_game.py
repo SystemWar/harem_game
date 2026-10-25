@@ -346,7 +346,7 @@ class HraTesty(unittest.TestCase):
             self.assertIsNotNone(nactena)
             self.assertEqual(nactena.hrac.gold, 777)
             self.assertEqual(nactena.nastaveni.obtiznost, "normalni")
-            self.assertEqual(nactena.to_dict()["save_version"], 1)
+            self.assertEqual(nactena.to_dict()["save_version"], 2)
 
     def test_migrace_legacy_save_a_odmitnuti_nepodporovane_verze(self):
         from config import SAVE_SCHEMA_VERSION
@@ -1559,10 +1559,12 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("10"), "11")
         self.assertEqual(normalizuj_volbu("31"), "32")
         self.assertEqual(normalizuj_volbu("34"), "35")
+        self.assertEqual(normalizuj_volbu("35"), "36")
+        self.assertEqual(normalizuj_volbu("36"), "37")
         self.assertEqual(normalizuj_volbu("s"), "26")
         self.assertEqual(
             list(MAPOVANI_CISEL_MENU),
-            [str(cislo) for cislo in range(1, 35)],
+            [str(cislo) for cislo in range(1, 37)],
         )
         self.assertEqual(normalizuj_volbu("$"), "cheat")
         self.assertEqual(normalizuj_volbu("&"), "cheat_suroviny")

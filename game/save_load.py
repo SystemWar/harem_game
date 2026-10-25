@@ -31,6 +31,7 @@ from models.calendar import CalendarSystem
 from models.fortress import FortressDevelopment
 from models.achievements import AchievementSystem
 from models.nevestinec import Nevestinec
+from game.zivy_svet import ZivySvetSystem
 
 POCET_SLOTU = 5
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -66,6 +67,7 @@ class Hra:
         self.mestske_frakce = MestskeFrakceSystem()
         self.mestsky_mesic = MestskyMesicSystem()
         self.rozsireni_haremu = RozsireniHarlemuSystem()
+        self.zivy_svet = ZivySvetSystem()
         self.marriage_system = {}
         self.kronika = None
         try:
@@ -117,6 +119,7 @@ class Hra:
             "mestske_frakce": self.mestske_frakce.to_dict(),
             "mestsky_mesic": self.mestsky_mesic.to_dict(),
             "rozsireni_haremu": self.rozsireni_haremu.to_dict(),
+            "zivy_svet": self.zivy_svet.to_dict(),
             "nastaveni": self.nastaveni.to_dict(),
             "marriage_system": {k: v.to_dict() for k, v in self.marriage_system.items()},
             "kronika": self.kronika.to_dict() if getattr(self, "kronika", None) else {"zaznamy": []},
@@ -173,6 +176,8 @@ class Hra:
             hra.mestsky_mesic = MestskyMesicSystem.from_dict(data["mestsky_mesic"])
         if isinstance(data.get("rozsireni_haremu"), dict):
             hra.rozsireni_haremu = RozsireniHarlemuSystem.from_dict(data["rozsireni_haremu"])
+        if isinstance(data.get("zivy_svet"), dict):
+            hra.zivy_svet = ZivySvetSystem.from_dict(data["zivy_svet"])
         try:
             from game.kronika import Kronika
             hra.kronika = Kronika.from_dict(data.get("kronika", {}))
@@ -226,6 +231,10 @@ def migrate_save(data):
                 migrated["svet"] = svet
             svet.setdefault("lokacni_odmeny", {})
             version = 1
+            migrated["save_version"] = version
+        elif version == 1:
+            migrated.setdefault("zivy_svet", {})
+            version = 2
             migrated["save_version"] = version
         else:
             raise ValueError(f"Chybí migrace uložené hry z verze {version}.")

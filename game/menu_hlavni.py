@@ -45,6 +45,8 @@ POLOZKY_HLAVNIHO_MENU = (
     ("33", "🏙️ Městské krize & drama"),
     ("34", "💬 Story questy harému"),
     ("35", "🏭 Specializace čtvrtí"),
+    ("36", "🏴 Správa městských frakcí"),
+    ("37", "🌍 Živý svět, cíle frakcí a NPC"),
 )
 
 ZKRATKY_HLAVNIHO_MENU = {
@@ -69,7 +71,7 @@ MAPOVANI_CISEL_MENU = {
 KATEGORIE_HLAVNIHO_MENU = (
     ("👑 HARÉM & VZTAHY", (1, 7, 14, 20, 22, 27, 29, 30)),
     ("🏰 PANSTVÍ & IMPÉRIUM", (2, 3, 5, 6, 12, 15)),
-    ("🗺️ SVĚT & DOBRODRUŽSTVÍ", (8, 9, 10, 13, 21, 26, 28, 31)),
+    ("🗺️ SVĚT, FRAKCE & DOBRODRUŽSTVÍ", (8, 9, 10, 13, 21, 26, 28, 31, 32, 33, 34, 35, 36)),
     ("⚙️ POSTAVA & PROVOZ", (4, 11, 16, 17, 18, 19, 23, 24, 25)),
 )
 
@@ -230,7 +232,13 @@ def vykresli_hlavni_menu(hra):
             22: "Profily a vztahy", 23: "Crafting", 24: "Dobít energii",
             25: "Uložit a nastavení", 26: "Průvodce", 27: "Manželství",
             28: "Kronika", 29: "Denní rozkazy", 30: "Veřejný výkon",
-            31: "Kalendář",
+            31: "Veřejný výkon",
+            32: "Kalendář",
+            33: "Městské krize",
+            34: "Story questy harému",
+            35: "Specializace čtvrtí",
+            35: "Správa frakcí",
+            36: "Živý svět a NPC",
         }
         print(f"{CYAN}{BOLD}╔════ 📜 HLAVNÍ MENU — MŘÍŽKA ═══════════════════════════════════════════════╗{NC}")
         cisla = list(kratke_popisy)

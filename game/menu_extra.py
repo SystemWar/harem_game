@@ -1,4 +1,4 @@
-# game/menu_extra.py — volby 29–35
+# game/menu_extra.py — rozšířené volby hlavního menu
 from utils.vypis import tisk_info
 
 
@@ -37,5 +37,8 @@ def obsluz_extra_volbu(volba, hra):
         return True
     if volba == "36":
         hra.mestske_frakce.menu(hra)
+        return True
+    if volba == "37":
+        hra.zivy_svet.menu(hra)
         return True
     return False

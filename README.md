@@ -4,7 +4,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows-lightgrey)](https://github.com/WarDroid23/harem_game)
-[![Verze](https://img.shields.io/badge/Verze-22.1--dark-darkred)](https://github.com/WarDroid23/harem_game)
+[![Verze](https://img.shields.io/badge/Verze-2.0-darkred)](https://github.com/WarDroid23/harem_game)
 [![Jazyk](https://img.shields.io/badge/Jazyk-čeština-green)](https://github.com/WarDroid23/harem_game)
 [![18+](https://img.shields.io/badge/Obsah-18%2B-red)](https://github.com/WarDroid23/harem_game)
 
@@ -94,6 +94,8 @@ Po spuštění hry vstoupíš do hlavního herního menu. Zadáváš čísla neb
 | `30` | **Denní rozkazy** | Naplánování běžných aktivit harému |
 | `31` | **Veřejný výkon** | Městská aktivita s odměnou a reputačními následky |
 | `32` | **Kalendář a události** | Sezóna a historie posledních událostí světa |
+| `35` | **Správa frakcí** | Přehled a správa městských frakcí |
+| `36` | **Živý svět** | Denní cíle frakcí, pohyb NPC a situace s několika možnostmi zásahu |
 | `A` | **Auto tah** | Bezpečný automatický tah |
 | `S/L/M` | Zkratky | Save / Load / Menu |
 | `0` | **Konec** | Uložit a ukončit |
@@ -124,6 +126,12 @@ Původní náhodná událost světa si zachovává svou vlastní šanci na spuš
 Aktivní linka a příměří jsou vidět v hlavním menu i kalendáři. Odmítnutí
 rivalova ultimáta může oslabit kontrolu nad nejzranitelnějším územím; vyjednání
 dohody místo toho na několik dní zabrání dalším rivalovým ultimátům.
+
+Verze 2.0 přidává samostatnou simulaci živého světa: každá frakce sleduje vlastní
+cíl, postavy se mezi lokacemi přesouvají a jejich činnost se zaznamenává.
+Dokončené cíle vytvářejí rozhodovací nabídky s podporou, kompromisem i možností
+nezasahovat. Stav cílů, postav, historie a nevyřízených nabídek se ukládá do save;
+starší uložené hry se při načtení bezpečně doplní.
 
 ---
 
@@ -719,4 +727,4 @@ Před vydáním musí projít celá sada testů.
 
 **GitHub:** [WarDroid23/harem_game](https://github.com/WarDroid23/harem_game)
 
-*Dark Dominion — Dark Expansion | Verze 22.1-dark | Výhradně pro dospělé 18+*
+*Dark Dominion — Dark Expansion | Verze 2.0 | Výhradně pro dospělé 18+*

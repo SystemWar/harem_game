@@ -107,6 +107,9 @@ def odpocinek(hra, rezim=None):
     hrac.den += 1
     if hasattr(hra, "kalendar"):
         hra.kalendar.dalsi_den(hrac.den - 1)
+    if getattr(hra, "zivy_svet", None) is not None:
+        for zprava in hra.zivy_svet.posun_den(hra):
+            tisk_info(f"🌍 {zprava}")
     if getattr(hra, "mestska_krize", None) is not None:
         vysledek_krize = hra.mestska_krize.posun_den(hra)
         if vysledek_krize:

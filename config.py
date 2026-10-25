@@ -19,8 +19,8 @@ def user_data_dir():
 
 
 SAVE_FILE = str(user_data_dir() / "harem_dark_v18_save.json")
-SAVE_SCHEMA_VERSION = 1
-VERSION = "22.1-dark"
+SAVE_SCHEMA_VERSION = 2
+VERSION = "2.0"
 
 USE_COLORS = True
 CURRENT_THEME = "temne_dominium"

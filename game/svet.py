@@ -3,7 +3,8 @@ import textwrap
 from dataclasses import dataclass, field
 
 from config import (
-    GREEN, RED, YELLOW, BLUE, MAGENTA, CYAN, GOLD, NC, BOLD, DIM, GRAY, WHITE
+    GREEN, RED, YELLOW, BLUE, MAGENTA, CYAN, GOLD, NC, BOLD, DIM, GRAY, WHITE,
+    ORANGE, VIOLET,
 )
 from utils.vypis import (
     banner_lokace, clear, terminalni_obrazek, tisk_chyba, tisk_info, tisk_ok,
@@ -18,6 +19,19 @@ from data.mesta import (
     MESTA,
 )
 from models.mafie import LOKACE_PODLE_UZEMI
+
+BARVY_FRAKCI = {
+    "policie": BLUE,
+    "podsveti": MAGENTA,
+    "cirkev": WHITE,
+    "obchodnici": YELLOW,
+    "kult_krve": RED,
+    "syndikat_stinu": CYAN,
+    "cech_kurtizan": GREEN,
+    "narkomani": GRAY,
+    "cyberpunkaci": ORANGE,
+    "nymfomanky": VIOLET,
+}
 
 LOKACE = {
     "pevnost": {
@@ -1140,8 +1154,15 @@ class SvetSystem:
         text = f"{ikona} {kratky}{tag}"
         if je_zde:
             return f"{GREEN}{BOLD}▶[{text:^{sirka}}]◀{NC}"
-        else:
-            return f" {CYAN}[{text:^{sirka}}]{NC} "
+        zivy_svet = getattr(hra, "zivy_svet", None)
+        frakce_id = (
+            zivy_svet.frakce_lokace(lok_id)
+            if zivy_svet is not None else "policie"
+        )
+        if je_mafie:
+            frakce_id = "podsveti"
+        barva = BARVY_FRAKCI.get(frakce_id, CYAN)
+        return f" {barva}[{text:^{sirka}}]{NC} "
 
     def vykresli_ascii_mapu(self, hra):
         """Vykreslí objevené cesty, nové čtvrti a významné značky mapy."""
@@ -1194,6 +1215,14 @@ class SvetSystem:
             f"🎯 aktivní úkol | 🛡️ tvoje území | 👤 NPC | 👹 neporažený boss | "
             f"⚗️ místní zdroj | "
             f"{GRAY}[?Neodhaleno?]{NC}\n"
+        )
+        print(
+            f"{DIM}Frakční kontrola: {BLUE}policie{NC} | "
+            f"{MAGENTA}podsvětí{NC} | {WHITE}inkvizice{NC} | "
+            f"{YELLOW}obchodníci{NC} | {RED}kult{NC} | "
+            f"{CYAN}stíny{NC}\n"
+            f"{GREEN}cech kurtizán{NC} | {GRAY}narkomani{NC} | "
+            f"{ORANGE}technici{NC} | {VIOLET}pořadatelé{NC}{DIM}\n"
         )
 
     def _generuj_cestovni_udalost(self, cil, hra):

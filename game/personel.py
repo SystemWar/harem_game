@@ -2,6 +2,7 @@
 
 import random
 
+from data.mesta import MESTA
 from models.agent import Agent
 from utils.vypis import clear, tisk_chyba, tisk_info, tisk_ok, vytiskni_volbu
 
@@ -67,6 +68,7 @@ def najmi_personal(hra, specializace):
         specializace=specializace,
         ukol=specializace,
         cil_lokace=hra.svet.aktualni_lokace,
+        cil_mesto=_mesto_lokace(hra.svet.aktualni_lokace),
         plat=definice["plat"],
     )
     hra.hrac.agenti.append(agent)
@@ -91,7 +93,8 @@ def menu_personalu(hra):
                 print(
                     f"{index}) {agent.jmeno} — "
                     f"{definice.get('nazev', agent.specializace)}, "
-                    f"denní plat {agent.plat} zl., mise: {agent.ukol or 'bez úkolu'}"
+                    f"denní plat {agent.plat} zl., mise: {agent.ukol or 'bez úkolu'}, "
+                    f"oblast: {MESTA.get(getattr(agent, 'cil_mesto', ''), {}).get('nazev', 'Staré město')}"
                 )
         else:
             print("Zatím nemáš najatý personál.")
@@ -170,8 +173,25 @@ def _predelej_misi(hra):
     agent.specializace = specializace
     agent.ukol = specializace
     agent.plat = SPECIALIZACE[specializace]["plat"]
-    agent.cil_lokace = hra.svet.aktualni_lokace
-    tisk_ok(f"{agent.jmeno} nastupuje na misi: {SPECIALIZACE[specializace]['nazev']}.")
+    mesta = tuple(MESTA)
+    for index, mesto_id in enumerate(mesta, 1):
+        vytiskni_volbu(str(index), MESTA[mesto_id]["nazev"])
+    vytiskni_volbu("0", "Ponechat aktuální oblast")
+    try:
+        volba_mesta = input("Cílové město: ").strip()
+        mesto_index = int(volba_mesta) - 1 if volba_mesta != "0" else -1
+        cil_mesto = (
+            mesta[mesto_index]
+            if 0 <= mesto_index < len(mesta)
+            else _mesto_lokace(hra.svet.aktualni_lokace)
+        )
+    except (EOFError, ValueError, IndexError):
+        cil_mesto = _mesto_lokace(hra.svet.aktualni_lokace)
+    agent.cil_mesto = cil_mesto
+    tisk_ok(
+        f"{agent.jmeno} nastupuje na misi: {SPECIALIZACE[specializace]['nazev']} "
+        f"(oblast: {MESTA[cil_mesto]['nazev']})."
+    )
 
 
 def nastav_rozkaz_armady(hra):
@@ -219,11 +239,25 @@ def zpracuj_denni_personal(hra):
         elif agent.ukol == "herold":
             pred = hra.hrac.reputace_mesta
             hra.hrac.reputace_mesta = min(100, pred + 1)
-            zpravy.append(f"{agent.jmeno} rozšířil zprávy o dominiu; reputace +{hra.hrac.reputace_mesta - pred}.")
+            mesto = _stav_mesta(hra, agent)
+            mesto.uprav(stabilita=1)
+            zpravy.append(
+                f"{agent.jmeno} rozšířil zprávy o dominiu v {mesto.nazev}; "
+                f"reputace +{hra.hrac.reputace_mesta - pred}, stabilita +1."
+            )
         elif agent.ukol == "spravce":
-            hra.hrac.gold += 8
-            zpravy.append(f"{agent.jmeno} zajistil obchodní příjem +8 zlata.")
+            mesto = _stav_mesta(hra, agent)
+            prijem = 8 + mesto.prosperita // 25
+            if mesto.bezpeci < 20:
+                prijem //= 2
+            hra.hrac.gold += prijem
+            zpravy.append(
+                f"{agent.jmeno} zajistil obchodní příjem v {mesto.nazev} "
+                f"+{prijem} zlata."
+            )
         elif agent.ukol == "lekar":
+            mesto = _stav_mesta(hra, agent)
+            mesto.uprav(bezpeci=1)
             leceni_hrace = min(8, hra.hrac.max_hp - hra.hrac.hp)
             hra.hrac.hp += leceni_hrace
             leceni_haremu = 0
@@ -233,12 +267,17 @@ def zpracuj_denni_personal(hra):
                 leceni_haremu += postava.hp - pred
             zpravy.append(
                 f"{agent.jmeno} ošetřil dominium (ty +{leceni_hrace} HP, "
-                f"harém +{leceni_haremu} HP)."
+                f"harém +{leceni_haremu} HP, {mesto.nazev}: bezpečí +1)."
             )
         elif agent.ukol == "velitel":
+            mesto = _stav_mesta(hra, agent)
+            mesto.uprav(bezpeci=2)
             pred = hra.mafie.moral_armady
             hra.mafie.moral_armady = min(100, pred + 5)
-            zpravy.append(f"{agent.jmeno} vedl výcvik; morálka armády +{hra.mafie.moral_armady - pred}.")
+            zpravy.append(
+                f"{agent.jmeno} vedl výcvik v oblasti {mesto.nazev}; "
+                f"morálka armády +{hra.mafie.moral_armady - pred}, bezpečí +2."
+            )
         agent.xp += 10
         if agent.xp >= agent.level * 50:
             agent.xp -= agent.level * 50
@@ -256,19 +295,43 @@ def zpracuj_denni_personal(hra):
 
 def _mise_pruzkumnika(hra, agent):
     from game.svet import LOKACE
+    from utils.decision_ai import vzdalenosti_od_cilu
 
     svet = hra.svet
     cil = agent.cil_lokace if agent.cil_lokace in svet.odhalene_lokace else svet.aktualni_lokace
+    mesto_id = _cilove_mesto(hra, agent)
+    lokace_mesta = set(MESTA[mesto_id]["lokace"])
+    if cil not in lokace_mesta:
+        vzdalenosti = vzdalenosti_od_cilu(
+            {lokace_id: data["sousedni"] for lokace_id, data in LOKACE.items()},
+            lokace_mesta,
+        )
+        sousedi = LOKACE.get(cil, {}).get("sousedni", [])
+        kandidat = min(
+            (lokace for lokace in sousedi if lokace in vzdalenosti),
+            key=lambda lokace: vzdalenosti[lokace],
+            default=None,
+        )
+        if kandidat and vzdalenosti.get(kandidat, 0) < vzdalenosti.get(cil, 0):
+            svet.odhal_lokaci(kandidat)
+            agent.cil_lokace = kandidat
+            return [
+                f"{agent.jmeno} postupuje po mapě směrem do {MESTA[mesto_id]['nazev']}."
+            ]
     sousedni = LOKACE.get(cil, {}).get("sousedni", [])
     neznama = [
         lokace for lokace in sousedni
         if lokace not in svet.odhalene_lokace and lokace in LOKACE
+        and LOKACE[lokace].get("mesto", "stare_mesto") == mesto_id
     ]
     if neznama:
         nova = random.choice(neznama)
         svet.odhal_lokaci(nova)
         agent.cil_lokace = nova
-        vysledek = f"{agent.jmeno} prozkoumal okolí a odhalil lokaci {LOKACE[nova]['nazev']}."
+        vysledek = (
+            f"{agent.jmeno} prozkoumal okolí města {MESTA[mesto_id]['nazev']} "
+            f"a odhalil lokaci {LOKACE[nova]['nazev']}."
+        )
     elif random.random() < 0.25:
         nalez = random.randint(8, 20)
         hra.hrac.gold += nalez
@@ -276,6 +339,24 @@ def _mise_pruzkumnika(hra, agent):
     else:
         vysledek = f"{agent.jmeno} zmapoval okolí lokace {cil.replace('_', ' ')}."
     return [vysledek]
+
+
+def _cilove_mesto(hra, agent):
+    mesto_id = getattr(agent, "cil_mesto", "")
+    if mesto_id in MESTA:
+        return mesto_id
+    return _mesto_lokace(getattr(agent, "cil_lokace", hra.svet.aktualni_lokace))
+
+
+def _mesto_lokace(lokace_id):
+    from game.svet import LOKACE
+
+    return LOKACE.get(lokace_id, {}).get("mesto", "stare_mesto")
+
+
+def _stav_mesta(hra, agent):
+    mesto_id = _cilove_mesto(hra, agent)
+    return hra.zivy_svet.mesta[mesto_id]
 
 
 def _zpracuj_armadni_rozkaz(hra):

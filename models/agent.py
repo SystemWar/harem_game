@@ -13,6 +13,7 @@ class Agent:
     cil_lokace: str = ""
     plat: int = 0
     posledni_akce: str = ""
+    cil_mesto: str = ""
 
     def to_dict(self):
         return asdict(self)

@@ -8,6 +8,7 @@ from game.save_load import Hra, migrate_save
 from game.zivy_svet import ZivySvetSystem
 from game.svet import LOKACE
 from data.mesta import MESTA
+from config import YELLOW
 from models.frakce import FrakcniSystem
 from utils.decision_ai import vzdalenosti_od_cilu, vyber_nejlepsi_uzitek
 
@@ -156,6 +157,58 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertIn(
             hra.zivy_svet.postavy[0]["lokace"],
             hra.svet.odhalene_lokace,
+        )
+
+    def test_mapa_barvi_lokace_podle_frakcni_kontroly(self):
+        hra = Hra()
+        hra.svet.aktualni_lokace = "pevnost"
+        hra.svet.odhal_lokaci("trh")
+
+        uzel = hra.svet._format_uzel("trh", hra)
+
+        self.assertIn(str(YELLOW), uzel)
+        self.assertEqual(hra.zivy_svet.frakce_lokace("trh"), "obchodnici")
+
+    def test_frakcni_vliv_a_mestske_udalosti_se_ukladaji(self):
+        hra = Hra()
+        hra.hrac.den = 4
+        hra.zivy_svet.posun_den(hra)
+
+        obnovena = Hra.from_dict(hra.to_dict())
+
+        self.assertEqual(
+            obnovena.zivy_svet.kontrola_lokaci,
+            hra.zivy_svet.kontrola_lokaci,
+        )
+        self.assertEqual(
+            obnovena.zivy_svet.udalosti_mesta,
+            hra.zivy_svet.udalosti_mesta,
+        )
+        self.assertEqual(len(obnovena.zivy_svet.udalosti_mesta), 1)
+
+    def test_rozhodnuti_mestske_udalosti_maji_cenu_a_dopad(self):
+        hra = Hra()
+        hra.hrac.den = 4
+        hra.zivy_svet.posun_den(hra)
+        udalost = hra.zivy_svet.udalosti_mesta[0]
+        mesto = hra.zivy_svet.mesta[udalost["mesto_id"]]
+        prosperita_pred = mesto.prosperita
+        zlato_pred = hra.hrac.gold
+
+        with patch("builtins.input", return_value="1"), redirect_stdout(io.StringIO()):
+            self.assertTrue(hra.zivy_svet._vyres_udalost_mesta(hra, udalost))
+
+        self.assertEqual(hra.hrac.gold, zlato_pred - 25)
+        self.assertEqual(mesto.prosperita, prosperita_pred + 5)
+
+    def test_karavanni_prijem_respektuje_bezpeci_mest(self):
+        hra = Hra()
+        prijem_bezpecnych_mest = hra.zivy_svet._prijem_karavan()
+        hra.zivy_svet.mesta["vychodni_brod"].uprav(bezpeci=-100)
+
+        self.assertLess(
+            hra.zivy_svet._prijem_karavan(),
+            prijem_bezpecnych_mest,
         )
 
 

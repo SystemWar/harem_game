@@ -27,6 +27,38 @@ MESTA = {
     },
 }
 
+FRAKCNI_ZONY = {
+    "policie": (
+        "pevnost", "hranice", "hostinec", "severni_hradby",
+        "rada_vychodniho_brodu", "vychodni_kasarna",
+    ),
+    "obchodnici": (
+        "trh", "ctvrt_remeselniku", "pristav", "molo_mesicniho_pristavu", "ricni_nabrezi",
+        "cechovni_ulicky", "kupecke_ulice", "vychodni_pristav",
+        "vychodni_trziste", "vychodni_zahrady",
+    ),
+    "podsveti": (
+        "katakomby", "tajna_svatyne_stinu", "paserska_zatoka",
+        "dymova_ctvrt", "pulnocni_trh", "cerna_ctvrt",
+        "podzemni_arena", "stare_katakomby", "kanalove_pruplavy",
+    ),
+    "cirkev": ("chram_cistoty", "vezeni_inkvizice"),
+    "kult_krve": (
+        "les", "svatyne_krvaveho_mesice", "observator",
+        "zricenina_astralni_veze", "krvavy_lom",
+    ),
+    "syndikat_stinu": ("lucernova_ctvrt", "univerzitni_okrsek"),
+    "cech_kurtizan": (
+        "cervena_ctvrt", "palac_bohatych", "lazne", "stribrne_terasy",
+        "zahradni_altan",
+    ),
+    "narkomani": ("haj_soumraku", "sklenena_zahrada"),
+    "cyberpunkaci": (
+        "akademie", "akademicke_namesti", "kovarensky_okrsek",
+    ),
+    "nymfomanky": ("botanicke_zahrady",),
+}
+
 LOKACE_VYCHODNIHO_BRODU = {
     "vychodni_pristav": {
         "nazev": "Východní přístav",

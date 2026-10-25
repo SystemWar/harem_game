@@ -78,6 +78,34 @@ class PersonelTesty(unittest.TestCase):
         self.assertIn("rozšířil zprávy", hra.hrac.agenti[0].posledni_akce)
         self.assertIn("obchodní příjem", hra.hrac.agenti[1].posledni_akce)
 
+    def test_spravce_cileneho_mesta_prizpusobi_prijem_prosperite(self):
+        hra = Hra()
+        hra.hrac.gold = 100
+        hra.hrac.agenti = [
+            Agent(
+                "Správce", specializace="spravce", ukol="spravce",
+                cil_mesto="vychodni_brod", plat=4,
+            )
+        ]
+        mesto = hra.zivy_svet.mesta["vychodni_brod"]
+        mesto.prosperita = 50
+
+        with redirect_stdout(io.StringIO()):
+            zpracuj_denni_personal(hra)
+
+        self.assertEqual(hra.hrac.gold, 106)
+        self.assertIn("Východní Brod", hra.hrac.agenti[0].posledni_akce)
+
+    def test_stary_agent_bez_ciloveho_mesta_se_nacte(self):
+        agent = Agent.from_dict({
+            "jmeno": "Průzkumník",
+            "specializace": "pruzkumnik",
+            "ukol": "pruzkumnik",
+            "cil_lokace": "pevnost",
+        })
+
+        self.assertEqual(agent.cil_mesto, "")
+
 
 if __name__ == "__main__":
     unittest.main()

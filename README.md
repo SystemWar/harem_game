@@ -135,10 +135,19 @@ přístavní cesty; jeho pět lokací, NPC a místní akce se postupně odhaluj�
 Dokončené cíle vytvářejí rozhodovací nabídky s podporou, kompromisem i možností
 nezasahovat. Stav měst, cílů, postav, historie a nevyřízených nabídek se ukládá
 do save; starší uložené hry dostanou výchozí stav měst při načtení.
+Frakce postupně mění svůj vliv nad jednotlivými lokacemi; mapa jejich kontrolu
+barevně odlišuje a hráč může vliv změnit také rozhodnutími. Každé čtyři dny
+vzniká opakující se městská situace (karavana, most nebo hlídky) s placeným i
+bezplatným řešením. Nevyřešené situace časem zhorší stav města. Každých pět dní
+se obchodní příjem odvíjí od prosperity, bezpečí a stability; nebezpečná města
+karavany zastaví.
 Vojáky a kapitány najímáš ve správě podsvětí (`3`); jejich denní žold a rozkazy
 lze spravovat společně s novým personálem. Průzkumníci objevují mapu, heroldi
 šíří pověst, správci zajišťují příjem a zdravotníci či velitelé pomáhají při
-denním provozu. Manželky lze jmenovat do dvorských funkcí; jejich schopnosti a
+denním provozu. Mise personálu lze zacílit na město; výsledky se promítají do
+jeho bezpečí, stability či obchodních příjmů. Frakční vliv, městské situace a
+jejich historie i cíle misí se ukládají, včetně bezpečného výchozího stavu pro
+starší savy. Manželky lze jmenovat do dvorských funkcí; jejich schopnosti a
 vzdělávání dětí jsou v nabídce manželství a rodiny.
 
 ---
@@ -383,6 +392,10 @@ NPC a neporažené bossy. Podle místa
 můžeš získat suroviny pro pevnost či alchymii, zkušenosti, energii, reputaci,
 vztahy s NPC, vliv frakcí nebo odhalit dosud skrytou cestu. Některé akce mají
 cenu či riziko; před potvrzením zkontroluj požadované zlato a suroviny.
+Odhalené lokace jsou navíc barevně označené podle převládající frakce (například
+obchodníci, policie, Podsvětí či Inkvizice); aktuální pozice hráče zůstává zelená.
+Frakční vliv se pomalu mění v průběhu dnů a při převzetí převahy změní barvu
+lokace. Podrobná legenda se zobrazuje pod mapou.
 Rozšíření Městské čtvrti 2.0 přidává Kanálové průplavy, Městské botanické
 zahrady a Kupecké ulice. Každá z nich má zvláštní surovinu dostupnou přes
 místní akci „Sebrat místní zdroj“ jednou za herní den: Noční stín, Kořen

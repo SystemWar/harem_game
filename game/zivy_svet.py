@@ -77,6 +77,21 @@ FRAKCNI_AKCE = {
     ),
 }
 
+FRAKCNI_RIVALOVE = (
+    ("policie", "podsveti"),
+    ("obchodnici", "syndikat_stinu"),
+    ("cirkev", "kult_krve"),
+    ("cech_kurtizan", "nymfomanky"),
+    ("narkomani", "cyberpunkaci"),
+)
+
+TRASA_KARAVANY = (
+    "trh",
+    "pristav",
+    "vychodni_pristav",
+    "vychodni_trziste",
+)
+
 VYCHOZI_POSTAVY = (
     {
         "id": "mira_lecitelka", "jmeno": "Mira", "role": "Potulná léčitelka",
@@ -207,12 +222,45 @@ UDALOSTI_MESTA = {
         ),
         "zanik": {"bezpeci": -3, "stabilita": -1},
     },
+    "trzni_oziveni": {
+        "frakce": "obchodnici",
+        "nazev": "Noví klienti dorazili na tržiště",
+        "text": "Dobrá pověst trasy přivedla do města nové kupce.",
+        "volby": (
+            ("Podpořit místní stánky (10 zl.)", 10, {"prosperita": 3}, 3),
+            ("Ponechat trh samostatně", 0, {"prosperita": 1}, 1),
+        ),
+        "zanik": {"prosperita": -1},
+    },
+    "bezpecna_ctvrt": {
+        "frakce": "policie",
+        "nazev": "Obyvatelé chtějí udržet klid",
+        "text": "Po úspěšné hlídce se místní domlouvají, jak udržet pořádek.",
+        "volby": (
+            ("Zajistit komunitní hlídku (15 zl.)", 15, {"bezpeci": 3, "stabilita": 2}, 3),
+            ("Pověřit místní radu", 0, {"stabilita": 2}, 2),
+        ),
+        "zanik": {"bezpeci": -2},
+    },
+    "trzni_nepokoj": {
+        "frakce": "obchodnici",
+        "nazev": "Tržiště řeší následky zdržení",
+        "text": "Zpožděné zásoby zvedly ceny a obchodníci žádají pomoc.",
+        "volby": (
+            ("Doplnit zásoby (15 zl.)", 15, {"prosperita": 2, "stabilita": 1}, 2),
+            ("Nechat ceny trhu volně", 0, {"stabilita": 1}, 1),
+        ),
+        "zanik": {"prosperita": -2, "stabilita": -1},
+    },
 }
 
 MISTA_UDALOSTI = {
     "karavana": {"stare_mesto": "trh", "vychodni_brod": "vychodni_trziste"},
     "most": {"stare_mesto": "pristav", "vychodni_brod": "vychodni_pristav"},
     "hlidky": {"stare_mesto": "hranice", "vychodni_brod": "vychodni_kasarna"},
+    "trzni_oziveni": {"stare_mesto": "trh", "vychodni_brod": "vychodni_trziste"},
+    "trzni_nepokoj": {"stare_mesto": "trh", "vychodni_brod": "vychodni_trziste"},
+    "bezpecna_ctvrt": {"stare_mesto": "hostinec", "vychodni_brod": "vychodni_kasarna"},
 }
 
 
@@ -226,6 +274,9 @@ class ZivySvetSystem:
     mesta: dict = field(default_factory=dict)
     kontrola_lokaci: dict = field(default_factory=dict)
     udalosti_mesta: list = field(default_factory=list)
+    navazujici_udalosti: list = field(default_factory=list)
+    vztahy_frakci: dict = field(default_factory=dict)
+    karavany: list = field(default_factory=list)
     dalsi_frakce: int = 0
     dalsi_postava: int = 0
 
@@ -256,8 +307,21 @@ class ZivySvetSystem:
             postava.setdefault("frakce", "")
             postava.setdefault("lokace", "trh")
             postava.setdefault("duvera", 0)
+            postava.setdefault("pribeh", 0)
+            postava.setdefault("vztah_hraci", 0)
+            postava.setdefault("posledni_rozhovor", "")
+            if postava.get("lokace") not in LOKACE:
+                postava["lokace"] = "trh"
+            if postava.get("frakce") not in FRAKCNI_CILE:
+                postava["frakce"] = ""
             if not isinstance(postava.get("akce"), (str, tuple, list)):
                 postava["akce"] = ("Prochází městem a vyřizuje své záležitosti.",)
+            postava["pribeh"] = max(0, min(3, _kladne_cislo(postava["pribeh"])))
+            postava["vztah_hraci"] = max(
+                -100, min(100, _signed_cislo(postava["vztah_hraci"]))
+            )
+            if not isinstance(postava["posledni_rozhovor"], str):
+                postava["posledni_rozhovor"] = ""
         for definice in VYCHOZI_POSTAVY:
             if not any(p.get("id") == definice["id"] for p in self.postavy):
                 self.postavy.append(deepcopy(definice))
@@ -315,9 +379,61 @@ class ZivySvetSystem:
                 udalost["den"] = max(0, udalost["den"])
                 udalost["nazev"] = UDALOSTI_MESTA[udalost["typ"]]["nazev"]
                 udalost["text"] = UDALOSTI_MESTA[udalost["typ"]]["text"]
-                udalost["lokace_id"] = MISTA_UDALOSTI[udalost["typ"]][udalost["mesto_id"]]
+                udalost["lokace_id"] = _lokace_udalosti(
+                    udalost["typ"], udalost["mesto_id"]
+                )
                 udalosti.append(udalost)
         self.udalosti_mesta = udalosti[-3:]
+        ulozene_vztahy = (
+            self.vztahy_frakci if isinstance(self.vztahy_frakci, dict) else {}
+        )
+        self.vztahy_frakci = {
+            _klic_vztahu(*dvojice): max(
+                -100,
+                min(100, _signed_cislo(ulozene_vztahy.get(_klic_vztahu(*dvojice), -20))),
+            )
+            for dvojice in FRAKCNI_RIVALOVE
+        }
+        if not isinstance(self.karavany, list):
+            self.karavany = []
+        self.karavany = [
+            karavana for karavana in self.karavany
+            if isinstance(karavana, dict)
+            and isinstance(karavana.get("cesta"), list)
+            and len(karavana["cesta"]) >= 2
+            and all(lokace in LOKACE for lokace in karavana["cesta"])
+            and all(
+                dalsi in LOKACE[lokace]["sousedni"]
+                for lokace, dalsi in zip(
+                    karavana["cesta"], karavana["cesta"][1:]
+                )
+            )
+            and isinstance(karavana.get("pozice"), int)
+            and 0 <= karavana["pozice"] < len(karavana["cesta"])
+            and isinstance(karavana.get("stav"), str)
+            and karavana.get("stav") == "na_ceste"
+        ][:3]
+        if not isinstance(self.navazujici_udalosti, list):
+            self.navazujici_udalosti = []
+        navazujici = []
+        for udalost in self.navazujici_udalosti:
+            if (
+                not isinstance(udalost, dict)
+                or udalost.get("mesto_id") not in MESTA
+                or udalost.get("typ") not in UDALOSTI_MESTA
+                or not isinstance(udalost.get("den"), int)
+            ):
+                continue
+            navazujici.append({
+                "den": max(0, udalost["den"]),
+                "mesto_id": udalost["mesto_id"],
+                "typ": udalost["typ"],
+                "retizec": (
+                    udalost.get("retizec")
+                    if isinstance(udalost.get("retizec"), str) else ""
+                ),
+            })
+        self.navazujici_udalosti = navazujici[-5:]
         self.nabidky = [
             nabidka for nabidka in self.nabidky
             if isinstance(nabidka, dict)
@@ -348,6 +464,9 @@ class ZivySvetSystem:
             },
             "kontrola_lokaci": deepcopy(self.kontrola_lokaci),
             "udalosti_mesta": deepcopy(self.udalosti_mesta),
+            "navazujici_udalosti": deepcopy(self.navazujici_udalosti),
+            "vztahy_frakci": deepcopy(self.vztahy_frakci),
+            "karavany": deepcopy(self.karavany),
             "dalsi_frakce": self.dalsi_frakce,
             "dalsi_postava": self.dalsi_postava,
         }
@@ -363,6 +482,9 @@ class ZivySvetSystem:
         mesta = data.get("mesta", {})
         kontrola_lokaci = data.get("kontrola_lokaci", {})
         udalosti_mesta = data.get("udalosti_mesta", [])
+        navazujici_udalosti = data.get("navazujici_udalosti", [])
+        vztahy_frakci = data.get("vztahy_frakci", {})
+        karavany = data.get("karavany", [])
         if not isinstance(cile, dict) or not isinstance(postavy, list):
             raise ValueError("Uložený živý svět má neplatný formát.")
         if (
@@ -371,6 +493,9 @@ class ZivySvetSystem:
             or not isinstance(mesta, dict)
             or not isinstance(kontrola_lokaci, dict)
             or not isinstance(udalosti_mesta, list)
+            or not isinstance(navazujici_udalosti, list)
+            or not isinstance(vztahy_frakci, dict)
+            or not isinstance(karavany, list)
         ):
             raise ValueError("Uložené události živého světa mají neplatný formát.")
         return cls(
@@ -382,6 +507,9 @@ class ZivySvetSystem:
             mesta=deepcopy(mesta),
             kontrola_lokaci=deepcopy(kontrola_lokaci),
             udalosti_mesta=deepcopy(udalosti_mesta[-3:]),
+            navazujici_udalosti=deepcopy(navazujici_udalosti[-5:]),
+            vztahy_frakci=deepcopy(vztahy_frakci),
+            karavany=deepcopy(karavany[-3:]),
             dalsi_frakce=_kladne_cislo(data.get("dalsi_frakce", 0)),
             dalsi_postava=_kladne_cislo(data.get("dalsi_postava", 0)),
         )
@@ -396,6 +524,7 @@ class ZivySvetSystem:
         for mesto in self.mesta.values():
             mesto.posun_den()
         self._vyres_expirovane_udalosti(den, zpravy)
+        self._aktivuj_nasledne_udalosti(den, zpravy)
 
         frakce_ids = tuple(FRAKCNI_CILE)
         vedlejsi_frakce = random.choice(
@@ -433,6 +562,9 @@ class ZivySvetSystem:
                         "čeká na uvolnění fronty rozhodnutí."
                     )
         self.dalsi_frakce = (self.dalsi_frakce + 1) % len(frakce_ids)
+        zprava_sporu = self._vyhodnot_soupereni(den)
+        if zprava_sporu:
+            zpravy.append(zprava_sporu)
 
         if den % 4 == 0 and len(self.udalosti_mesta) < 3:
             udalost = self._vytvor_udalost_mesta(den)
@@ -441,14 +573,7 @@ class ZivySvetSystem:
                 f"{self.mesta[udalost['mesto_id']].nazev}: "
                 f"{udalost['nazev'].lower()}. Ve městě čeká rozhodnutí."
             )
-        if den % 5 == 0:
-            prijem = self._prijem_karavan()
-            if prijem:
-                hra.hrac.gold += prijem
-                zpravy.append(
-                    f"Obchodní trasy přinesly {prijem} zl. "
-                    "podle bezpečí a prosperity měst."
-                )
+        zpravy.extend(self._posun_karavany(hra, den))
 
         postava = self.postavy[self.dalsi_postava % len(self.postavy)]
         self.dalsi_postava = (self.dalsi_postava + 1) % len(self.postavy)
@@ -472,6 +597,95 @@ class ZivySvetSystem:
         )
         self.historie.extend({"den": den, "text": zprava} for zprava in zpravy)
         self.historie = self.historie[-30:]
+        return zpravy
+
+    def _vyhodnot_soupereni(self, den):
+        """Spor či aliance se projeví pravidelně a jen v jednom městě."""
+        if den % 3:
+            return ""
+        dvojice = FRAKCNI_RIVALOVE[(den // 3 - 1) % len(FRAKCNI_RIVALOVE)]
+        vztah = self.vztahy_frakci[_klic_vztahu(*dvojice)]
+        if vztah <= -25:
+            mesto_id = self._mesto_pro_frakci(dvojice[0])
+            mesto = self.mesta[mesto_id]
+            mesto.uprav(bezpeci=-1, stabilita=-1)
+            return (
+                f"Napětí mezi {FRAKCNI_CILE[dvojice[0]][0]} a "
+                f"{FRAKCNI_CILE[dvojice[1]][0]} vyvolalo spor ve městě "
+                f"{mesto.nazev} (bezpečí −1, stabilita −1)."
+            )
+        if vztah >= 25:
+            mesto_id = self._mesto_pro_frakci(dvojice[0])
+            mesto = self.mesta[mesto_id]
+            mesto.uprav(stabilita=1)
+            return (
+                f"Dohoda frakcí {FRAKCNI_CILE[dvojice[0]][0]} a "
+                f"{FRAKCNI_CILE[dvojice[1]][0]} posílila stabilitu "
+                f"ve městě {mesto.nazev}."
+            )
+        return ""
+
+    def _mesto_pro_frakci(self, frakce_id):
+        mesto_id = self.frakcni_cile.get(frakce_id, {}).get("mesto_id")
+        return mesto_id if mesto_id in self.mesta else _prvni_mesto_frakce(frakce_id)
+
+    def zmen_vztah_frakci(self, frakce_a, frakce_b, zmena):
+        klic = _klic_vztahu(frakce_a, frakce_b)
+        if klic not in self.vztahy_frakci:
+            return False
+        self.vztahy_frakci[klic] = max(
+            -100, min(100, self.vztahy_frakci[klic] + _signed_cislo(zmena))
+        )
+        return True
+
+    def _posun_karavany(self, hra, den):
+        zpravy = []
+        if den % 5 == 0 and len(self.karavany) < 3:
+            cesta = list(TRASA_KARAVANY)
+            if (den // 5) % 2 == 0:
+                cesta.reverse()
+            karavana = {
+                "id": f"karavana-{den}",
+                "cesta": cesta,
+                "pozice": 0,
+                "stav": "na_ceste",
+                "odeslano": den,
+            }
+            self.karavany.append(karavana)
+            zpravy.append(
+                f"Karavana vyrazila z lokace {cesta[0].replace('_', ' ')} "
+                f"směrem do {LOKACE[cesta[-1]]['nazev']}."
+            )
+        pokracujici = []
+        for karavana in self.karavany:
+            karavana["pozice"] = min(
+                len(karavana["cesta"]) - 1,
+                karavana["pozice"] + 1,
+            )
+            lokace_id = karavana["cesta"][karavana["pozice"]]
+            mesto_id = _mesto_lokace(lokace_id)
+            if hasattr(hra, "svet"):
+                hra.svet.odhal_lokaci(lokace_id)
+            if karavana["pozice"] < len(karavana["cesta"]) - 1:
+                pokracujici.append(karavana)
+                continue
+            mesto = self.mesta[mesto_id]
+            if mesto.bezpeci >= 20 and mesto.stabilita >= 20:
+                prijem = 12 + mesto.prosperita // 5
+                hra.hrac.gold += prijem
+                mesto.uprav(prosperita=1, stabilita=1)
+                self._uprav_vliv_lokace(lokace_id, "obchodnici", 3)
+                zpravy.append(
+                    f"Karavana bezpečně dorazila do města {mesto.nazev}: "
+                    f"+{prijem} zl., prosperita +1."
+                )
+            else:
+                mesto.uprav(stabilita=-1)
+                zpravy.append(
+                    f"Karavana nedorazila bezpečně do města {mesto.nazev}; "
+                    "obchodníci odklonili zásilku."
+                )
+        self.karavany = pokracujici
         return zpravy
 
     def _vykonej_cil_fakce(self, frakce_id):
@@ -552,12 +766,15 @@ class ZivySvetSystem:
             "typ": typ,
             "nazev": definice["nazev"],
             "text": definice["text"],
-            "lokace_id": MISTA_UDALOSTI[typ][mesto_id],
+            "lokace_id": _lokace_udalosti(typ, mesto_id),
         }
 
     def _vyres_expirovane_udalosti(self, den, zpravy):
         cekajici = []
         for udalost in self.udalosti_mesta:
+            if den < udalost.get("k_dispozici_od", udalost["den"]):
+                cekajici.append(udalost)
+                continue
             if den - udalost["den"] < 4:
                 cekajici.append(udalost)
                 continue
@@ -572,6 +789,31 @@ class ZivySvetSystem:
                 "text": f"{mesto.nazev}: nevyřešeno — {udalost['nazev']}.",
             })
         self.udalosti_mesta = cekajici[-3:]
+
+    def _aktivuj_nasledne_udalosti(self, den, zpravy):
+        cekajici = []
+        for udalost in sorted(self.navazujici_udalosti, key=lambda polozka: polozka["den"]):
+            if udalost["den"] > den or len(self.udalosti_mesta) >= 3:
+                cekajici.append(udalost)
+                continue
+            definice = UDALOSTI_MESTA[udalost["typ"]]
+            lokace_id = _lokace_udalosti(udalost["typ"], udalost["mesto_id"])
+            self.udalosti_mesta.append({
+                "id": f"{udalost['mesto_id']}-{udalost['typ']}-{den}",
+                "den": den,
+                "k_dispozici_od": den,
+                "mesto_id": udalost["mesto_id"],
+                "typ": udalost["typ"],
+                "nazev": definice["nazev"],
+                "text": definice["text"],
+                "lokace_id": lokace_id,
+                "retizec": udalost.get("retizec", ""),
+            })
+            zpravy.append(
+                f"Pokračuje městská linka: {definice['nazev']} "
+                f"ve městě {self.mesta[udalost['mesto_id']].nazev}."
+            )
+        self.navazujici_udalosti = cekajici[-5:]
 
     def _prijem_karavan(self):
         prijem = 0
@@ -600,6 +842,7 @@ class ZivySvetSystem:
             mesto.uprav(**definice["zanik"])
             tisk_info("Situaci ponecháváš bez zásahu; městské poměry se zhorší.")
             self._zapis_udalost(udalost, "bez zásahu")
+            self._naplanuj_pokracovani(udalost, uspesne=False)
             return True
         try:
             index = int(volba) - 1
@@ -621,7 +864,26 @@ class ZivySvetSystem:
         )
         tisk_ok(f"Rozhodl ses: {text}.")
         self._zapis_udalost(udalost, text)
+        self._naplanuj_pokracovani(udalost, uspesne=True)
         return True
+
+    def _naplanuj_pokracovani(self, udalost, uspesne):
+        if udalost.get("retizec") or len(self.navazujici_udalosti) >= 5:
+            return
+        dalsi_typ = {
+            ("karavana", True): "trzni_oziveni",
+            ("most", True): "trzni_oziveni",
+            ("hlidky", True): "bezpecna_ctvrt",
+            ("karavana", False): "trzni_nepokoj",
+        }.get((udalost["typ"], uspesne))
+        if not dalsi_typ:
+            return
+        self.navazujici_udalosti.append({
+            "den": udalost["den"] + 2,
+            "mesto_id": udalost["mesto_id"],
+            "typ": dalsi_typ,
+            "retizec": udalost.get("id", udalost["typ"]),
+        })
 
     def _zapis_udalost(self, udalost, rozhodnuti):
         mesto = self.mesta[udalost["mesto_id"]]
@@ -734,21 +996,225 @@ class ZivySvetSystem:
                         return
                 continue
             if self.udalosti_mesta:
-                udalost = self.udalosti_mesta[0]
+                index = next(
+                    (
+                        index for index, udalost in enumerate(self.udalosti_mesta)
+                        if udalost.get("k_dispozici_od", udalost["den"]) <= hra.hrac.den
+                    ),
+                    None,
+                )
+                if index is None:
+                    self._menu_nabidky_svet(hra)
+                    return
+                udalost = self.udalosti_mesta[index]
                 if not self._vyres_udalost_mesta(hra, udalost):
                     return
-                self.udalosti_mesta.pop(0)
+                self.udalosti_mesta.pop(index)
                 continue
             if self.historie:
                 print("\nPoslední dění:")
                 for zaznam in self.historie[-5:]:
                     print(f"  Den {zaznam['den']}: {zaznam['text']}")
+            vytiskni_volbu("1", "Přehled změn, karavan a vztahů frakcí")
+            vytiskni_volbu("2", "Dlouhodobé příběhy NPC")
+            vytiskni_volbu("3", "Vyjednávat mezi frakcemi")
             vytiskni_volbu("0", "Zpět")
             try:
-                if input("> ").strip() == "0":
+                volba = input("> ").strip()
+                if volba == "0":
                     return
+                if volba == "1":
+                    self._menu_nabidky_svet(hra)
+                elif volba == "2":
+                    self._menu_pribehu_npc(hra)
+                elif volba == "3":
+                    self._menu_diplomacie_frakci(hra)
             except EOFError:
                 return
+
+    def _menu_nabidky_svet(self, hra):
+        print("\n=== PŘEHLED ZMĚN SVĚTA ===")
+        for mesto in self.mesta.values():
+            print(
+                f"  {mesto.nazev}: prosperita {mesto.prosperita}, "
+                f"bezpečí {mesto.bezpeci}, stabilita {mesto.stabilita}"
+            )
+        print("\nVztahy frakcí:")
+        for dvojice in FRAKCNI_RIVALOVE:
+            hodnota = self.vztahy_frakci[_klic_vztahu(*dvojice)]
+            stav = "spojenectví" if hodnota >= 25 else "napětí" if hodnota <= -25 else "křehké příměří"
+            print(
+                f"  {FRAKCNI_CILE[dvojice[0]][0]} ↔ "
+                f"{FRAKCNI_CILE[dvojice[1]][0]}: {stav} ({hodnota:+d})"
+            )
+        print("\nKaravany:")
+        if self.karavany:
+            for karavana in self.karavany:
+                cesta = karavana["cesta"]
+                poloha = cesta[karavana["pozice"]]
+                cil = cesta[-1]
+                print(
+                    f"  {karavana['id']}: {LOKACE[poloha]['nazev']} → "
+                    f"{LOKACE[cil]['nazev']} "
+                    f"({karavana['pozice'] + 1}/{len(cesta)})"
+                )
+        else:
+            print("  Žádná karavana právě není na cestě.")
+        print("\nNadcházející události:")
+        for udalost in self.navazujici_udalosti:
+            print(
+                f"  Den {udalost['den']}: {udalost['typ'].replace('_', ' ')} — "
+                f"{self.mesta[udalost['mesto_id']].nazev}"
+            )
+        print("\nPoslední změny:")
+        for zaznam in self.historie[-10:]:
+            print(f"  Den {zaznam['den']}: {zaznam['text']}")
+        try:
+            input("\nEnter pro návrat...")
+        except EOFError:
+            return
+
+    def _menu_pribehu_npc(self, hra):
+        print("\n=== PŘÍBĚHY POSTAV ===")
+        for index, postava in enumerate(self.postavy, 1):
+            print(
+                f"  {index}) {postava['jmeno']} — "
+                f"{postava['role']}, příběh {postava['pribeh']}/3, "
+                f"vztah {postava['vztah_hraci']:+d}"
+            )
+        try:
+            volba = input("Postava (0 zpět): ").strip()
+            if volba == "0":
+                return
+            index = int(volba) - 1
+            postava = self.postavy[index]
+        except (EOFError, ValueError, IndexError):
+            tisk_chyba("Neplatný výběr postavy.")
+            return
+        mesto_id = _mesto_lokace(postava["lokace"])
+        mesto = self.mesta[mesto_id]
+        kapitoly = (
+            "Sdílí, co ji přivedlo do města, a poslouchá tvé otázky.",
+            "Ukazuje, jak její práce mění životy místních obyvatel.",
+            "Rozhoduje se, jakou budoucnost chce pro sebe i své město.",
+        )
+        if postava["pribeh"] >= 3:
+            print(
+                f"{postava['jmeno']} už uzavřela svůj příběh. "
+                f"Vztah s tebou: {postava['vztah_hraci']:+d}."
+            )
+            try:
+                input("Enter pro návrat...")
+            except EOFError:
+                pass
+            return
+        kapitola = postava["pribeh"]
+        print(
+            f"\n{postava['jmeno']} — {kapitoly[kapitola]}\n"
+            f"Vztah {postava['vztah_hraci']:+d} | město {mesto.nazev}: "
+            f"stabilita {mesto.stabilita}"
+        )
+        vytiskni_volbu("1", "Nabídnout praktickou pomoc (10 zl.)")
+        vytiskni_volbu("2", "Podpořit její vlastní rozhodnutí (zdarma)")
+        vytiskni_volbu("0", "Ukončit rozhovor")
+        try:
+            volba = input("> ").strip()
+        except EOFError:
+            return
+        if volba == "0":
+            return
+        if volba not in ("1", "2"):
+            tisk_chyba("Neplatná volba.")
+            return
+        if volba == "1" and hra.hrac.gold < 10:
+            tisk_chyba("Na praktickou pomoc potřebuješ 10 zlata.")
+            return
+        if volba == "1":
+            hra.hrac.gold -= 10
+            postava["vztah_hraci"] = min(100, postava["vztah_hraci"] + 8)
+            mesto.uprav(stabilita=2)
+            vysledek = "pomohl jsi jí s místním úkolem"
+        else:
+            postava["vztah_hraci"] = min(100, postava["vztah_hraci"] + 4)
+            mesto.uprav(stabilita=1)
+            vysledek = "podpořil jsi její vlastní rozhodnutí"
+        postava["pribeh"] += 1
+        postava["posledni_rozhovor"] = vysledek
+        if postava["pribeh"] == 3:
+            frakce = hra.frakce.frakce.get(postava.get("frakce"))
+            if frakce:
+                frakce.zmenit(4)
+            mesto.uprav(prosperita=1, stabilita=1)
+            tisk_ok(
+                f"Příběh {postava['jmeno']} dospěl k závěru; "
+                "místní frakce získala přízeň +4."
+            )
+        self.historie.append({
+            "den": max(1, int(hra.hrac.den)),
+            "text": (
+                f"{postava['jmeno']}: {vysledek}; "
+                f"příběh {postava['pribeh']}/3."
+            ),
+        })
+        self.historie = self.historie[-30:]
+        tisk_ok(
+            f"{postava['jmeno']} — příběh {postava['pribeh']}/3, "
+            f"vztah {postava['vztah_hraci']:+d}; stabilita "
+            f"{mesto.nazev} +{2 if volba == '1' else 1}."
+        )
+
+    def _menu_diplomacie_frakci(self, hra):
+        print("\n=== VZTAHY MEZI FRAKCEMI ===")
+        for index, dvojice in enumerate(FRAKCNI_RIVALOVE, 1):
+            hodnota = self.vztahy_frakci[_klic_vztahu(*dvojice)]
+            print(
+                f"  {index}) {FRAKCNI_CILE[dvojice[0]][0]} ↔ "
+                f"{FRAKCNI_CILE[dvojice[1]][0]} ({hodnota:+d})"
+            )
+        try:
+            vyber = input("Vyber dvojici (0 zpět): ").strip()
+            if vyber == "0":
+                return
+            dvojice = FRAKCNI_RIVALOVE[int(vyber) - 1]
+        except (EOFError, ValueError, IndexError):
+            tisk_chyba("Neplatná dvojice.")
+            return
+        vytiskni_volbu("1", "Zprostředkovat smír (25 zl., vztahy +15)")
+        vytiskni_volbu("2", "Podpořit soupeření (vztahy −15, stabilita −2)")
+        try:
+            rozhodnuti = input("> ").strip()
+        except EOFError:
+            return
+        if rozhodnuti == "1":
+            if hra.hrac.gold < 25:
+                tisk_chyba("Na zprostředkování smíru potřebuješ 25 zlata.")
+                return
+            hra.hrac.gold -= 25
+            self.zmen_vztah_frakci(*dvojice, 15)
+            for frakce_id in dvojice:
+                frakce = hra.frakce.frakce.get(frakce_id)
+                if frakce:
+                    frakce.zmenit(2)
+            mesto = self.mesta[self._mesto_pro_frakci(dvojice[0])]
+            mesto.uprav(stabilita=2)
+            vysledek = "zprostředkoval jsi smír"
+        elif rozhodnuti == "2":
+            self.zmen_vztah_frakci(*dvojice, -15)
+            mesto = self.mesta[self._mesto_pro_frakci(dvojice[0])]
+            mesto.uprav(stabilita=-2)
+            vysledek = "podpořil jsi soupeření"
+        else:
+            tisk_chyba("Neplatná volba.")
+            return
+        self.historie.append({
+            "den": max(1, int(hra.hrac.den)),
+            "text": (
+                f"{FRAKCNI_CILE[dvojice[0]][0]} a "
+                f"{FRAKCNI_CILE[dvojice[1]][0]}: {vysledek}."
+            ),
+        })
+        self.historie = self.historie[-30:]
+        tisk_ok(f"Rozhodnutí změnilo vztahy mezi frakcemi: {vysledek}.")
 
     def _vyres_nabidku(self, hra, nabidka):
         while True:
@@ -823,6 +1289,25 @@ def _kladne_cislo(hodnota):
         return max(0, int(hodnota))
     except (TypeError, ValueError):
         return 0
+
+
+def _signed_cislo(hodnota):
+    if isinstance(hodnota, bool):
+        return 0
+    try:
+        return int(hodnota)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _klic_vztahu(frakce_a, frakce_b):
+    return "|".join(sorted((frakce_a, frakce_b)))
+
+
+def _lokace_udalosti(typ, mesto_id):
+    return MISTA_UDALOSTI.get(typ, {}).get(
+        mesto_id, MESTA[mesto_id]["lokace"][0]
+    )
 
 
 def _mesto_lokace(lokace_id):

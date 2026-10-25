@@ -324,3 +324,4 @@ def vykresli_hlavni_menu(hra):
         print(f"  {GREEN}✨ Quest bonus získaný celkem: {hra.hrac.bonus_za_questy} zl.{NC}")
     if getattr(hra.hrac, "bonus_za_souboje", 0):
         print(f"  {RED}⚔️ Soubojové bonusy získané celkem: {hra.hrac.bonus_za_souboje} zl.{NC}")
+    print(f"  {DIM}Tvůrce: #LordRusty23{NC}")

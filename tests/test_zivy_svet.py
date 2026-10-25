@@ -296,6 +296,75 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertLessEqual(len(hra.zivy_svet.nabidky), 10)
         self.assertLessEqual(len(hra.zivy_svet.historie), 30)
 
+    def test_diplomacie_meni_vztah_a_stabilitu_mesta(self):
+        hra = Hra()
+        vztah_pred = hra.zivy_svet.vztahy_frakci["podsveti|policie"]
+        stabilita_pred = hra.zivy_svet.mesta["stare_mesto"].stabilita
+        zlato_pred = hra.hrac.gold
+
+        with patch("builtins.input", side_effect=["1", "1"]), \
+             redirect_stdout(io.StringIO()):
+            hra.zivy_svet._menu_diplomacie_frakci(hra)
+
+        self.assertEqual(hra.hrac.gold, zlato_pred - 25)
+        self.assertEqual(
+            hra.zivy_svet.vztahy_frakci["podsveti|policie"],
+            vztah_pred + 15,
+        )
+        self.assertEqual(
+            hra.zivy_svet.mesta["stare_mesto"].stabilita,
+            stabilita_pred + 2,
+        )
+
+    def test_pribeh_npc_uklada_postup_a_odmenu_dokoncenim(self):
+        hra = Hra()
+        postava = hra.zivy_svet.postavy[0]
+        reputace_pred = hra.frakce.frakce["policie"].reputace
+        with patch("builtins.input", side_effect=["1", "1", "1", "2", "1", "2"]):
+            with redirect_stdout(io.StringIO()):
+                for _ in range(3):
+                    hra.zivy_svet._menu_pribehu_npc(hra)
+
+        self.assertEqual(postava["pribeh"], 3)
+        self.assertEqual(postava["vztah_hraci"], 16)
+        self.assertEqual(hra.frakce.frakce["policie"].reputace, reputace_pred + 4)
+        self.assertEqual(
+            Hra.from_dict(hra.to_dict()).zivy_svet.postavy[0]["pribeh"],
+            3,
+        )
+
+    def test_navazujici_udalost_se_aktivuje_a_ulozi(self):
+        hra = Hra()
+        hra.zivy_svet.navazujici_udalosti.append({
+            "den": 5,
+            "mesto_id": "vychodni_brod",
+            "typ": "trzni_oziveni",
+            "retizec": "test-linky",
+        })
+        zpravy = []
+
+        hra.zivy_svet._aktivuj_nasledne_udalosti(5, zpravy)
+
+        self.assertEqual(len(hra.zivy_svet.navazujici_udalosti), 0)
+        self.assertEqual(hra.zivy_svet.udalosti_mesta[-1]["lokace_id"], "vychodni_trziste")
+        obnoveno = Hra.from_dict(hra.to_dict())
+        self.assertEqual(
+            obnoveno.zivy_svet.udalosti_mesta[-1]["retizec"],
+            "test-linky",
+        )
+
+    def test_karavana_postupuje_po_propojene_trase_a_je_ulozitelna(self):
+        hra = Hra()
+        hra.hrac.den = 5
+        hra.zivy_svet.posun_den(hra)
+
+        self.assertEqual(len(hra.zivy_svet.karavany), 1)
+        cesta = hra.zivy_svet.karavany[0]["cesta"]
+        self.assertTrue(all(
+            b in LOKACE[a]["sousedni"] for a, b in zip(cesta, cesta[1:])
+        ))
+        self.assertEqual(len(Hra.from_dict(hra.to_dict()).zivy_svet.karavany), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

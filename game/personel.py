@@ -45,6 +45,13 @@ ROZKAZY_ARMADY = {
     "tažení": "Tažení — riskantní výprava za kořistí",
 }
 
+STYLY_MISE = {
+    "vyvazene": ("Vyváženě", 0, None),
+    "setrne": ("Úsporně (denní mzda −2 zl., nejméně 0)", -2, None),
+    "podpora": ("Podpořit cílové město (+1 stabilita, mzda +1 zl.)", 1, "stabilita"),
+    "intenzivni": ("Pracovat intenzivně (+1 prosperita, mzda +2 zl.)", 2, "prosperita"),
+}
+
 
 def najmi_personal(hra, specializace):
     definice = SPECIALIZACE.get(specializace)
@@ -93,7 +100,8 @@ def menu_personalu(hra):
                 print(
                     f"{index}) {agent.jmeno} — "
                     f"{definice.get('nazev', agent.specializace)}, "
-                    f"denní plat {agent.plat} zl., mise: {agent.ukol or 'bez úkolu'}, "
+                    f"denní plat {_denni_plat(agent)} zl., mise: {agent.ukol or 'bez úkolu'}, "
+                    f"styl: {STYLY_MISE.get(agent.styl_mise, STYLY_MISE['vyvazene'])[0]}, "
                     f"oblast: {MESTA.get(getattr(agent, 'cil_mesto', ''), {}).get('nazev', 'Staré město')}"
                 )
         else:
@@ -178,6 +186,20 @@ def _predelej_misi(hra):
     agent.specializace = specializace
     agent.ukol = specializace
     agent.plat = SPECIALIZACE[specializace]["plat"]
+    print("\nStyl mise:")
+    styly = tuple(STYLY_MISE)
+    for index, styl in enumerate(styly, 1):
+        vytiskni_volbu(str(index), STYLY_MISE[styl][0])
+    vytiskni_volbu("0", "Ponechat vyvážený styl")
+    try:
+        vyber_styl = input("Styl: ").strip()
+        if vyber_styl != "0":
+            styl_index = int(vyber_styl) - 1
+            if not 0 <= styl_index < len(styly):
+                raise IndexError
+            agent.styl_mise = styly[styl_index]
+    except (EOFError, ValueError, IndexError):
+        agent.styl_mise = "vyvazene"
     mesta = tuple(MESTA)
     for index, mesto_id in enumerate(mesta, 1):
         vytiskni_volbu(str(index), MESTA[mesto_id]["nazev"])
@@ -225,7 +247,7 @@ def zpracuj_denni_personal(hra):
     ]
     mohou_pracovat = True
     if agenti:
-        celkove_platy = sum(max(0, int(agent.plat)) for agent in agenti)
+        celkove_platy = sum(_denni_plat(agent) for agent in agenti)
         if hra.hrac.gold < celkove_platy:
             tisk_chyba(
                 f"Personál dnes odpočívá: na denní platy {celkove_platy} zl. "
@@ -282,6 +304,18 @@ def zpracuj_denni_personal(hra):
             zpravy.append(
                 f"{agent.jmeno} vedl výcvik v oblasti {mesto.nazev}; "
                 f"morálka armády +{hra.mafie.moral_armady - pred}, bezpečí +2."
+            )
+        styl = STYLY_MISE.get(
+            getattr(agent, "styl_mise", "vyvazene"),
+            STYLY_MISE["vyvazene"],
+        )
+        metrika = styl[2]
+        if metrika:
+            mesto = _stav_mesta(hra, agent)
+            mesto.uprav(**{metrika: 1})
+            zpravy.append(
+                f"Styl mise „{styl[0]}“: {mesto.nazev} "
+                f"{'stabilita' if metrika == 'stabilita' else 'prosperita'} +1."
             )
         agent.xp += 10
         if agent.xp >= agent.level * 50:
@@ -351,6 +385,14 @@ def _cilove_mesto(hra, agent):
     if mesto_id in MESTA:
         return mesto_id
     return _mesto_lokace(getattr(agent, "cil_lokace", hra.svet.aktualni_lokace))
+
+
+def _denni_plat(agent):
+    styl = STYLY_MISE.get(
+        getattr(agent, "styl_mise", "vyvazene"),
+        STYLY_MISE["vyvazene"],
+    )
+    return max(0, int(agent.plat) + styl[1])
 
 
 def _mesto_lokace(lokace_id):

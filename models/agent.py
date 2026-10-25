@@ -14,6 +14,7 @@ class Agent:
     plat: int = 0
     posledni_akce: str = ""
     cil_mesto: str = ""
+    styl_mise: str = "vyvazene"
 
     def to_dict(self):
         return asdict(self)

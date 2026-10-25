@@ -96,6 +96,26 @@ class PersonelTesty(unittest.TestCase):
         self.assertEqual(hra.hrac.gold, 106)
         self.assertIn("Východní Brod", hra.hrac.agenti[0].posledni_akce)
 
+    def test_styl_mise_personalu_ma_ulozeny_dopad_na_cilove_mesto(self):
+        hra = Hra()
+        hra.hrac.gold = 20
+        hra.hrac.agenti = [
+            Agent(
+                "Herold", specializace="herold", ukol="herold",
+                cil_mesto="vychodni_brod", plat=5, styl_mise="podpora",
+            )
+        ]
+        mesto = hra.zivy_svet.mesta["vychodni_brod"]
+        stabilita_pred = mesto.stabilita
+
+        with redirect_stdout(io.StringIO()):
+            zpracuj_denni_personal(hra)
+
+        self.assertEqual(hra.hrac.gold, 14)
+        self.assertEqual(mesto.stabilita, stabilita_pred + 2)
+        obnoveno = Hra.from_dict(hra.to_dict())
+        self.assertEqual(obnoveno.hrac.agenti[0].styl_mise, "podpora")
+
     def test_stary_agent_bez_ciloveho_mesta_se_nacte(self):
         agent = Agent.from_dict({
             "jmeno": "Průzkumník",

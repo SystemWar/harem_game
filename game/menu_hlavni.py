@@ -36,7 +36,7 @@ POLOZKY_HLAVNIHO_MENU = (
     ("23", "🤝 Profily, osobnost, vztahy"),
     ("24", "🛠️ Crafting & předměty"),
     ("25", "⚡ Dobít energii"),
-    ("26", "🏠 Hlavní menu (uložit / načíst / nastavení)"),
+    ("26", "💾 Uložit / načíst hru"),
     ("27", "🧭 Průvodce dominiem"),
     ("28", "💍 Manželství, žárlivost & rodina"),
     ("29", "📖 Kronika dominia"),
@@ -56,7 +56,7 @@ ZKRATKY_HLAVNIHO_MENU = {
     "s": "26",
     "l": "26",
     "m": "26",
-    "q": "0",
+    "q": "26",
     "a": "auto",
     "t": "test",
     "$": "cheat",
@@ -210,7 +210,7 @@ def vykresli_hlavni_menu(hra):
         cislo: popis
         for cislo, (_stare_cislo, popis) in enumerate(POLOZKY_HLAVNIHO_MENU, 1)
     }
-    popisy[25] = "🏠 Uložit / načíst / nastavení"
+    popisy[25] = "💾 Uložit / načíst hru (S/L/M)"
     styl = getattr(hra.nastaveni, "styl_menu", "kategorie")
     if styl == "seznam":
         print(f"{GOLD}{BOLD}╔════ 📜 HLAVNÍ MENU — VŠECHNY VOLBY ════╗{NC}")
@@ -248,7 +248,7 @@ def vykresli_hlavni_menu(hra):
             "17": "Grafy a statistiky", "18": "Souboj a aréna",
             "19": "Alchymie", "20": "Přehled dne", "21": "Nevěstinec",
             "22": "Deník úkolů", "23": "Profily a vztahy",
-            "24": "Crafting", "25": "Dobít energii", "26": "Uložit a nastavení",
+            "24": "Crafting", "25": "Dobít energii", "26": "Uložit / načíst",
             "27": "Průvodce", "28": "Manželství", "29": "Kronika",
             "30": "Denní rozkazy", "31": "Veřejný výkon",
             "32": "Kalendář", "33": "Městské krize",
@@ -277,6 +277,10 @@ def vykresli_hlavni_menu(hra):
                 + f"{CYAN}║{NC}"
             )
         print(f"{CYAN}{BOLD}╚═══════════════════════════════════════════════════════════════════════════╝{NC}")
+    elif styl == "jednosloupcovy":
+        print(f"{CYAN}{BOLD}📜 HLAVNÍ MENU — JEDEN SLOUPEC{NC}")
+        for cislo, popis in popisy.items():
+            print(f"  {YELLOW}{cislo:>2}){NC} {popis}")
     else:
         sirka_okna = 47
         okna = []
@@ -310,6 +314,7 @@ def vykresli_hlavni_menu(hra):
                 f"╚{'═' * (sirka_okna + 2)}╝{NC}"
             )
     print(f"  {GREEN}A){NC} 🤖 Bezpečný automatický tah")
+    print(f"  {CYAN}Q){NC} 🏠 Hlavní menu / uložit / nahrát / nastavení")
     menu_spodek = ""
     if hra.nastaveni.vyvojarsky_rezim:
         menu_spodek += (

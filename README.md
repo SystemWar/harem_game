@@ -51,6 +51,15 @@ savy. Řiď se proto názvy zobrazenými ve své hře; nabídka obsahuje mimo ji
 - kasino v Červené čtvrti s kostkami, jednadvacítkou a rozvojem podniku;
 - manželství, rodinu, kroniku, kalendář a nastavení.
 
+Klávesa **Q** v hlavním menu otevře rozcestník **Hlavní menu / uložit /
+nahrát / nastavení**, kde lze hru uložit, načíst, otevřít nastavení nebo se
+vrátit do hry. **0** zůstává návratem/ukončením podle právě otevřené nabídky;
+**S/L/M** jsou zkratky pro práci s uložením. Nastavení nabízí barevné skiny, zapnutí barev,
+obtížnost, Ironman, AI dialogy, vývojářský režim, městskou výzdobu a šest
+rozložení hlavního menu: kategorie, seznam, dva sloupce, sekce, mřížka a jeden
+sloupec. Náhled ukazuje aktivní vzhled a volba obnovy vrátí pouze vzhledové
+volby na výchozí hodnoty. Nastavení hry se ukládají spolu s uloženou hrou.
+
 V hlavním menu se zobrazuje také podpis **Tvůrce: #LordRusty23**.
 
 ## Živý svět 2.0

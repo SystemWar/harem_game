@@ -805,6 +805,35 @@ class HraTesty(unittest.TestCase):
         self.assertTrue(hra.nastaveni.vyvojarsky_rezim)
         self.assertEqual(hra.nastaveni.styl_menu, "mrizka")
 
+    def test_menu_nastaveni_obnovi_vychozi_vzhled(self):
+        import config
+        from game.settings import (
+            VYCHOZI_DEKORACE_MESTA,
+            VYCHOZI_STYL_MENU,
+            VYCHOZI_TEMA,
+        )
+        from main import menu_nastaveni
+
+        hra = Hra()
+        hra.nastaveni.tema = "azurovy_kristal"
+        hra.nastaveni.styl_menu = "jednosloupcovy"
+        hra.nastaveni.dekorace_mesta = "palac"
+        hra.nastaveni.barvy = False
+        puvodni_tema = config.CURRENT_THEME
+        puvodni_barvy = config.USE_COLORS
+        try:
+            with patch("builtins.input", side_effect=["10", "", "0"]), redirect_stdout(
+                io.StringIO()
+            ):
+                menu_nastaveni(hra)
+            self.assertEqual(hra.nastaveni.tema, VYCHOZI_TEMA)
+            self.assertEqual(hra.nastaveni.styl_menu, VYCHOZI_STYL_MENU)
+            self.assertEqual(hra.nastaveni.dekorace_mesta, VYCHOZI_DEKORACE_MESTA)
+            self.assertTrue(hra.nastaveni.barvy)
+        finally:
+            config.set_colors_enabled(puvodni_barvy)
+            config.apply_theme(puvodni_tema)
+
     def test_styl_menu_a_skin_se_ukladaji_a_meni_vzhled_menu(self):
         import config
         from game.menu_hlavni import vykresli_hlavni_menu
@@ -1563,6 +1592,8 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("36"), "37")
         self.assertEqual(normalizuj_volbu("37"), "38")
         self.assertEqual(normalizuj_volbu("s"), "26")
+        self.assertEqual(normalizuj_volbu("q"), "26")
+        self.assertEqual(normalizuj_volbu("0"), "0")
         self.assertEqual(
             list(MAPOVANI_CISEL_MENU),
             [str(cislo) for cislo in range(1, 39)],
@@ -1573,6 +1604,12 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("*"), "cheat_budovy")
         self.assertEqual(normalizuj_volbu(":"), "cheat_loajalita")
         self.assertEqual(normalizuj_volbu("neznama"), "neznama")
+
+        with patch("main.menu_meta_hlavni") as otevri_rozcestnik:
+            _obsluz_volbu_hlavniho_menu(
+                hra, normalizuj_volbu("q"), _obnov_hru_runtime(hra)
+            )
+        otevri_rozcestnik.assert_called_once_with(hra)
 
         vystup = io.StringIO()
         with redirect_stdout(vystup):
@@ -1585,6 +1622,8 @@ class HraTesty(unittest.TestCase):
         self.assertNotIn(":) 💚 Cheat:", vystup.getvalue())
 
         self.assertIn("10)", vystup.getvalue())
+        self.assertIn("Q)", vystup.getvalue())
+        self.assertIn("Hlavní menu / uložit / nahrát / nastavení", vystup.getvalue())
         self.assertIn("🎯 Lov otrokyň", vystup.getvalue())
         self.assertIn("31)", vystup.getvalue())
         self.assertIn("📅 Kalendář a události", vystup.getvalue())

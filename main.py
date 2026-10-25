@@ -128,11 +128,13 @@ def menu_nacteni():
 
 def menu_nastaveni(hra):
     from config import THEMES, apply_theme
+    from game.settings import STYLY_MENU, STYLY_MENU_POPISY
     while True:
         clear()
         nastaveni = hra.nastaveni
         terminalni_obrazek("nastaveni")
         hlavicka("Nastavení hry")
+        print("Vzhled se mění okamžitě; herní nastavení se ukládají do save.")
         print(f"1) Barvy terminálu: {'zapnuté' if nastaveni.barvy else 'vypnuté'}")
         print(f"2) Obtížnost: {nastaveni.obtiznost_text}")
         print(f"3) Skin / barevné schéma: {getattr(nastaveni, 'tema_text', 'Temné dominium')}")
@@ -143,8 +145,10 @@ def menu_nastaveni(hra):
             f"{'zapnutý' if nastaveni.vyvojarsky_rezim else 'vypnutý'}"
         )
         print(f"7) Styl hlavního menu: {nastaveni.styl_menu_text}")
-        print(f"8) Galerie barevných témat: {getattr(nastaveni, 'tema_text', 'Temné dominium')}")
+        print("8) Náhled aktivního skinu a rozložení")
         print(f"9) Výzdoba města: {getattr(nastaveni, 'dekorace_mesta_text', 'Křivolaké tržiště')}")
+        print("10) Obnovit výchozí vzhled")
+        print("11) Nápověda k nastavení")
         print("0) Zpět")
         try:
             volba = input("> ").strip().lower()
@@ -220,18 +224,10 @@ def menu_nastaveni(hra):
             )
             input("Enter...")
         elif volba == "7":
-            from game.settings import STYLY_MENU
-            nazvy_stylu = {
-                "kategorie": "Čtyři kategorie v rámečcích",
-                "seznam": "Seznam bez kategorií",
-                "kompaktni": "Kompaktní dva sloupce",
-                "sekce": "Kategorie jako barevné sekce bez rámečků",
-                "mrizka": "Kompaktní mřížka ve třech sloupcích",
-            }
             print("\n--- Styl hlavního menu ---\n")
             for index, styl in enumerate(STYLY_MENU, 1):
                 aktivni = " ← aktivní" if styl == nastaveni.styl_menu else ""
-                print(f"{index}) {nazvy_stylu[styl]}{aktivni}")
+                print(f"{index}) {STYLY_MENU_POPISY[styl]}{aktivni}")
             print("0) Zpět")
             vyber = input("> ").strip()
             if vyber == "0":
@@ -247,36 +243,26 @@ def menu_nastaveni(hra):
                 tisk_chyba("Zadej číslo.")
             input("Enter...")
         elif volba == "8":
-            print("\n--- Galerie barevných témat ---\n")
-            seznam = list(THEMES.items())
-            for i, (tid, info) in enumerate(seznam, 1):
-                aktivni = " ← aktivní" if tid == getattr(nastaveni, "tema", "") else ""
-                vzorek = ""
-                if nastaveni.barvy:
-                    vzorek = "".join(
-                        f"{info['barvy'][barva]}██"
-                        for barva in ("RED", "GREEN", "BLUE", "MAGENTA", "GOLD")
-                    ) + "\033[0m "
-                print(f"{i}) {vzorek}{info['nazev']}{aktivni}")
-                print(f"   {info['popis']}")
-            print("0) Zpět")
-            vyber = input("> ").strip()
-            if vyber == "0":
-                continue
-            try:
-                idx = int(vyber) - 1
-                if 0 <= idx < len(seznam):
-                    tid = seznam[idx][0]
-                    nastaveni.tema = tid
-                    nastaveni.barvy = True
-                    aplikuj_nastaveni(nastaveni)
-                    nazev = apply_theme(tid)
-                    tisk_ok(f"Téma nastaveno: {nazev}")
-                    terminalni_obrazek("menu")
-                else:
-                    tisk_chyba("Špatná volba.")
-            except ValueError:
-                tisk_chyba("Zadej číslo.")
+            print("\n--- Náhled aktivního vzhledu ---")
+            print(
+                f"Skin: {nastaveni.tema_text} | "
+                f"barvy terminálu: {'zapnuté' if nastaveni.barvy else 'vypnuté'}"
+            )
+            print(f"Rozložení: {nastaveni.styl_menu_text}")
+            print("Ukázka barev: ", end="")
+            if nastaveni.barvy:
+                print("".join(
+                    f"{THEMES[nastaveni.tema]['barvy'][barva]}██"
+                    for barva in ("RED", "GREEN", "BLUE", "MAGENTA", "GOLD")
+                ) + "\033[0m")
+            else:
+                print("barvy jsou vypnuté")
+            print("\nDostupné skiny:")
+            for info in THEMES.values():
+                print(f"  • {info['nazev']}: {info['popis']}")
+            print("\nDostupné rozložení:")
+            for styl in STYLY_MENU:
+                print(f"  • {STYLY_MENU_POPISY[styl]}")
             input("Enter...")
         elif volba == "9":
             from game.settings import MESTSKA_DEKORACE
@@ -300,6 +286,35 @@ def menu_nastaveni(hra):
                     tisk_chyba("Špatná volba.")
             except ValueError:
                 tisk_chyba("Zadej číslo.")
+            input("Enter...")
+        elif volba == "10":
+            from game.settings import (
+                VYCHOZI_DEKORACE_MESTA,
+                VYCHOZI_STYL_MENU,
+                VYCHOZI_TEMA,
+            )
+            nastaveni.tema = VYCHOZI_TEMA
+            nastaveni.styl_menu = VYCHOZI_STYL_MENU
+            nastaveni.dekorace_mesta = VYCHOZI_DEKORACE_MESTA
+            nastaveni.barvy = True
+            aplikuj_nastaveni(nastaveni)
+            tisk_ok("Výchozí vzhled hry byl obnoven.")
+            input("Enter...")
+        elif volba == "11":
+            print(
+                "\nSkin mění barvy terminálu; při vypnutých barvách zůstane "
+                "aktivní a projeví se po jejich zapnutí."
+            )
+            print(
+                "Styl menu mění pouze zobrazení možností. Obtížnost ovlivňuje "
+                "hru, Ironman omezuje obnovu a AI dialogy vyžadují externí "
+                "službu, pokud jsou povolené."
+            )
+            print(
+                "V hlavním menu otevře Q nabídku hlavního menu, uložení, "
+                "načtení a nastavení. Změny vzhledu lze "
+                "kdykoli vrátit výchozím nastavením."
+            )
             input("Enter...")
         else:
             tisk_chyba("Neplatná volba.")

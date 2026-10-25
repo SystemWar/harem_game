@@ -8,7 +8,22 @@ OBTIZNOSTI = ("lehka", "normalni", "tezka")
 VYCHOZI_OBTIZNOST = "normalni"
 VYCHOZI_TEMA = "temne_dominium"
 VYCHOZI_DEKORACE_MESTA = "trh"
-STYLY_MENU = ("kategorie", "seznam", "kompaktni", "sekce", "mrizka")
+STYLY_MENU = (
+    "kategorie",
+    "seznam",
+    "kompaktni",
+    "sekce",
+    "mrizka",
+    "jednosloupcovy",
+)
+STYLY_MENU_POPISY = {
+    "kategorie": "Čtyři kategorie v rámečcích",
+    "seznam": "Jednoduchý seznam bez kategorií",
+    "kompaktni": "Kompaktní dvousloupcové menu",
+    "sekce": "Čtyři přehledné sekce bez rámečků",
+    "mrizka": "Hustá mřížka ve třech sloupcích",
+    "jednosloupcovy": "Přehledné menu v jednom sloupci",
+}
 VYCHOZI_STYL_MENU = "kategorie"
 
 MESTSKA_DEKORACE = {
@@ -131,13 +146,7 @@ class NastaveniHry:
 
     @property
     def styl_menu_text(self):
-        return {
-            "kategorie": "Čtyři kategorie v rámečcích",
-            "seznam": "Jednoduchý seznam bez kategorií",
-            "kompaktni": "Kompaktní dvousloupcové menu",
-            "sekce": "Čtyři přehledné sekce bez rámečků",
-            "mrizka": "Hustá mřížka ve třech sloupcích",
-        }[self.styl_menu]
+        return STYLY_MENU_POPISY[self.styl_menu]
 
     @property
     def dekorace_mesta_text(self):

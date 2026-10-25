@@ -396,23 +396,38 @@ class ZivySvetSystem:
         }
         if not isinstance(self.karavany, list):
             self.karavany = []
-        self.karavany = [
-            karavana for karavana in self.karavany
-            if isinstance(karavana, dict)
-            and isinstance(karavana.get("cesta"), list)
-            and len(karavana["cesta"]) >= 2
-            and all(lokace in LOKACE for lokace in karavana["cesta"])
-            and all(
-                dalsi in LOKACE[lokace]["sousedni"]
-                for lokace, dalsi in zip(
-                    karavana["cesta"], karavana["cesta"][1:]
+        platne_karavany = []
+        for karavana in self.karavany:
+            if not isinstance(karavana, dict):
+                continue
+            cesta = karavana.get("cesta")
+            pozice = karavana.get("pozice")
+            if (
+                not isinstance(cesta, list)
+                or len(cesta) < 2
+                or not all(isinstance(lokace, str) and lokace in LOKACE for lokace in cesta)
+                or not all(
+                    dalsi in LOKACE[lokace]["sousedni"]
+                    for lokace, dalsi in zip(cesta, cesta[1:])
                 )
-            )
-            and isinstance(karavana.get("pozice"), int)
-            and 0 <= karavana["pozice"] < len(karavana["cesta"])
-            and isinstance(karavana.get("stav"), str)
-            and karavana.get("stav") == "na_ceste"
-        ][:3]
+                or not isinstance(pozice, int)
+                or isinstance(pozice, bool)
+                or not 0 <= pozice < len(cesta)
+                or karavana.get("stav") != "na_ceste"
+            ):
+                continue
+            platne_karavany.append({
+                "id": (
+                    karavana.get("id")
+                    if isinstance(karavana.get("id"), str)
+                    else f"karavana-{_kladne_cislo(karavana.get('odeslano'))}"
+                ),
+                "cesta": list(cesta),
+                "pozice": pozice,
+                "stav": "na_ceste",
+                "odeslano": _kladne_cislo(karavana.get("odeslano")),
+            })
+        self.karavany = platne_karavany[:3]
         if not isinstance(self.navazujici_udalosti, list):
             self.navazujici_udalosti = []
         navazujici = []
@@ -1087,6 +1102,8 @@ class ZivySvetSystem:
             if volba == "0":
                 return
             index = int(volba) - 1
+            if not 0 <= index < len(self.postavy):
+                raise IndexError
             postava = self.postavy[index]
         except (EOFError, ValueError, IndexError):
             tisk_chyba("Neplatný výběr postavy.")
@@ -1175,7 +1192,10 @@ class ZivySvetSystem:
             vyber = input("Vyber dvojici (0 zpět): ").strip()
             if vyber == "0":
                 return
-            dvojice = FRAKCNI_RIVALOVE[int(vyber) - 1]
+            index = int(vyber) - 1
+            if not 0 <= index < len(FRAKCNI_RIVALOVE):
+                raise IndexError
+            dvojice = FRAKCNI_RIVALOVE[index]
         except (EOFError, ValueError, IndexError):
             tisk_chyba("Neplatná dvojice.")
             return

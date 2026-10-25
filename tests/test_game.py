@@ -1565,7 +1565,7 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("s"), "26")
         self.assertEqual(
             list(MAPOVANI_CISEL_MENU),
-            [str(cislo) for cislo in range(1, 38)],
+            [str(cislo) for cislo in range(1, 39)],
         )
         self.assertEqual(normalizuj_volbu("$"), "cheat")
         self.assertEqual(normalizuj_volbu("&"), "cheat_suroviny")

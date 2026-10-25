@@ -48,6 +48,7 @@ savy. Řiď se proto názvy zobrazenými ve své hře; nabídka obsahuje mimo ji
 - diplomacii, správu frakcí a živý svět;
 - pevnost, budovy, ekonomiku, personál a armádu;
 - souboje, arénu, alchymii, crafting a výzkum;
+- kasino v Červené čtvrti s kostkami, jednadvacítkou a rozvojem podniku;
 - manželství, rodinu, kroniku, kalendář a nastavení.
 
 V hlavním menu se zobrazuje také podpis **Tvůrce: #LordRusty23**.
@@ -123,6 +124,26 @@ Armáda může hlídkovat, cvičit, patrolovat území nebo podniknout riskantn�
 tažení. Žold a výsledek závisí na nastavení, počtech vojáků a kapitánů, morálce
 a síle oddílů. Starší pracovníci v uložených hrách dostanou výchozí vyvážený
 styl mise.
+
+## Kasino a hazard
+
+Volba **38** otevře kasino U Červené čtvrti. Založení stojí 300 zlata; každé
+vylepšení rozšiřuje maximální sázku o 100 zlata a zvyšuje denní příjem podniku.
+Kasino má nejvýše pět úrovní, sázky jsou celé částky od 10 zlata do aktuálního
+limitu a hráč nemůže vsadit více, než má.
+
+- **Kostky:** zvol „pod 7“ nebo „nad 7“ při hodu dvěma šestistěnnými kostkami.
+  Součet 7 vrací sázku; správný tip vyplácí dvojnásobek vsazené částky včetně
+  původní sázky.
+- **Jednadvacet:** ber karty nebo zůstaň; eso má hodnotu 11 nebo 1 podle toho,
+  co zabrání překročení 21. Krupiér dobírá do 17. Běžná výhra vrací dvojnásobek
+  sázky a přirozený blackjack vyplácí čistý zisk 1,5násobku sázky.
+- **Evidence:** podnik ukládá nejvýše 20 posledních her, počet výher, proher a
+  remíz, celkově vsazené zlato a čistý výsledek. Kasino také přidává
+  10 zlata za herní den na každou úroveň.
+
+Výsledky hazardních her používají náhodné hody a ovlivňují pouze herní zlato.
+Před potvrzením sázky se zobrazuje limit i dostupné prostředky.
 
 ## Dominion, ekonomika a frakce
 

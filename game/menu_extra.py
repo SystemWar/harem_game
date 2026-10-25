@@ -45,4 +45,8 @@ def obsluz_extra_volbu(volba, hra):
         from game.personel import menu_personalu
         menu_personalu(hra)
         return True
+    if volba == "39":
+        from game.kasino import menu_kasina
+        menu_kasina(hra)
+        return True
     return False

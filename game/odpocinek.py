@@ -144,17 +144,25 @@ def odpocinek(hra, rezim=None):
     prijem_harem = hra.harem.pasivni_prijem()
     prijem_mafie = hra.mafie.vypocet_prijmu()
     prijem_nevestinec = 0
+    prijem_kasino = 0
     prijem_vyzkum = hra.vyzkum.bonus_denniho_prijmu(hra)
     try:
         from game.nevestinec import vypocti_denni_prijem
         prijem_nevestinec = vypocti_denni_prijem(hra)
     except Exception:
         prijem_nevestinec = 0
-    hrac.gold += prijem_harem + prijem_mafie + prijem_nevestinec + prijem_vyzkum
+    if getattr(hra, "kasino", None) is not None:
+        prijem_kasino = hra.kasino.denni_prijem(hrac.den)
+    hrac.gold += (
+        prijem_harem + prijem_mafie + prijem_nevestinec
+        + prijem_kasino + prijem_vyzkum
+    )
     if prijem_nevestinec > 0:
         tisk_ok(f"🏛️ Nevěstinec: denní tržba +{prijem_nevestinec} 🪙")
     if prijem_vyzkum > 0:
         tisk_ok(f"🔬 Výzkumné obchodní sítě: +{prijem_vyzkum} 🪙")
+    if prijem_kasino > 0:
+        tisk_ok(f"🎲 Kasino: denní příjem +{prijem_kasino} 🪙")
     from game.personel import zpracuj_denni_personal
     zpracuj_denni_personal(hra)
     from game.manzelstvi import aplikuj_vykon_manzelek
@@ -207,7 +215,7 @@ def odpocinek(hra, rezim=None):
     if streak_bonus:
         tisk_ok(f"Streak bonus: +{streak_bonus} zlaťáků.")
     tisk_ok(
-        f"Pasivní příjem: {prijem_harem + prijem_mafie + prijem_nevestinec + prijem_vyzkum + bonus_marriage_gold + streak_bonus} zlaťáků."
+        f"Pasivní příjem: {prijem_harem + prijem_mafie + prijem_nevestinec + prijem_kasino + prijem_vyzkum + bonus_marriage_gold + streak_bonus} zlaťáků."
     )
     if dokoncene_najmy:
         tisk_ok("Nájem skončil: " + ", ".join(dokoncene_najmy) + ".")

@@ -580,7 +580,7 @@ def _obsluz_volbu_hlavniho_menu(
         menu_energie(hra)
     elif volba == "28":
         menu_manzelstvi(hra)
-    elif volba in ("29", "30", "31", "32", "33", "34", "35", "36", "37", "38"):
+    elif volba in ("29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"):
         obsluz_extra_volbu(volba, hra)
     elif volba == "26":
         vysledek = menu_meta_hlavni(hra)

@@ -31,6 +31,7 @@ from models.calendar import CalendarSystem
 from models.fortress import FortressDevelopment
 from models.achievements import AchievementSystem
 from models.nevestinec import Nevestinec
+from models.kasino import KasinoSystem
 from game.zivy_svet import ZivySvetSystem
 
 POCET_SLOTU = 5
@@ -63,6 +64,7 @@ class Hra:
         self.kalendar = CalendarSystem(self.hrac.den)
         self.achievementy = AchievementSystem()
         self.nevestinec = Nevestinec()
+        self.kasino = KasinoSystem()
         self.mestska_krize = MestskaKrizeSystem()
         self.mestske_frakce = MestskeFrakceSystem()
         self.mestsky_mesic = MestskyMesicSystem()
@@ -115,6 +117,7 @@ class Hra:
             "kalendar": self.kalendar.to_dict(),
             "achievementy": self.achievementy.to_dict(),
             "nevestinec": self.nevestinec.to_dict(),
+            "kasino": self.kasino.to_dict(),
             "mestska_krize": self.mestska_krize.to_dict(),
             "mestske_frakce": self.mestske_frakce.to_dict(),
             "mestsky_mesic": self.mestsky_mesic.to_dict(),
@@ -168,6 +171,8 @@ class Hra:
             hra.achievementy = AchievementSystem.from_dict(data["achievementy"])
         if isinstance(data.get("nevestinec"), dict):
             hra.nevestinec = Nevestinec.from_dict(data["nevestinec"])
+        if isinstance(data.get("kasino"), dict):
+            hra.kasino = KasinoSystem.from_dict(data["kasino"])
         if isinstance(data.get("mestska_krize"), dict):
             hra.mestska_krize = MestskaKrizeSystem.from_dict(data["mestska_krize"])
         if isinstance(data.get("mestske_frakce"), dict):

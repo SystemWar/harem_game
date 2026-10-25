@@ -1,8 +1,8 @@
 """Denní simulace frakcí, NPC a rozhodovacích situací."""
 
+import random
 from copy import deepcopy
 from dataclasses import dataclass, field
-import random
 
 from utils.vypis import tisk_chyba, tisk_info, tisk_ok, vytiskni_volbu
 
@@ -126,13 +126,36 @@ class ZivySvetSystem:
             cil["postup"] = min(2, _kladne_cislo(cil.get("postup", 0)))
             cil["cil"] = max(1, min(10, _kladne_cislo(cil.get("cil", 3))))
         self.postavy = [p for p in self.postavy if isinstance(p, dict)]
-        for index, definice in enumerate(VYCHOZI_POSTAVY):
+        for index, postava in enumerate(self.postavy):
+            postava.setdefault("id", f"npc_{index}")
+            postava.setdefault("jmeno", "Neznámá postava")
+            postava.setdefault("role", "Obyvatel města")
+            postava.setdefault("frakce", "")
+            postava.setdefault("lokace", "trh")
+            postava.setdefault("duvera", 0)
+            if not isinstance(postava.get("akce"), (str, tuple, list)):
+                postava["akce"] = ("Prochází městem a vyřizuje své záležitosti.",)
+        for definice in VYCHOZI_POSTAVY:
             if not any(p.get("id") == definice["id"] for p in self.postavy):
                 self.postavy.append(deepcopy(definice))
             else:
                 postava = next(p for p in self.postavy if p.get("id") == definice["id"])
                 for klic, hodnota in definice.items():
                     postava.setdefault(klic, hodnota)
+        self.nabidky = [
+            nabidka for nabidka in self.nabidky
+            if isinstance(nabidka, dict)
+            and all(
+                isinstance(nabidka.get(klic), str)
+                for klic in ("frakce_id", "frakce_nazev", "cilek", "text", "postava")
+            )
+        ]
+        self.historie = [
+            zaznam for zaznam in self.historie
+            if isinstance(zaznam, dict)
+            and "den" in zaznam
+            and isinstance(zaznam.get("text"), str)
+        ][-30:]
         self.dalsi_frakce %= len(FRAKCNI_CILE)
         self.dalsi_postava %= max(1, len(self.postavy))
 

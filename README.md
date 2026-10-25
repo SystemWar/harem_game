@@ -109,6 +109,25 @@ jejich poloha se ukládá. Hráč může otevřít jejich třídílné dlouhodob
 pomoci jim za zlato nebo podpořit jejich vlastní rozhodnutí. Dokončení příběhu
 ovlivní vztah, město a příslušnou frakci.
 
+Každá z jedenácti frakcí má vlastní starost, obchodní specializaci a tři
+příběhové kapitoly. Kronika frakcí v nabídce živého světa ukazuje jejich
+reputaci, město, aktuální téma příběhu a zboží. Příběhové rozhovory zobrazují
+konkrétní kapitolu příslušné frakce. Přehled obou měst navíc vypíše jejich
+nejnaléhavější problém podle prosperity, bezpečí a stability.
+
+### Městská tržiště a ekonomika
+
+Staré město a Východní Brod mají oddělené, uložené zásoby potravin, dřeva,
+kamene, železa a krystalů. Na tržišti v živém světě lze suroviny nakupovat
+i prodávat; ceny se mění podle místní prosperity, stability a množství zboží.
+Sklady se každý den doplňují a jejich stav přetrvá načtení hry. Prodejní cena
+je nižší než nákupní, aby opakované obchodování nevytvářelo zisk bez rizika.
+
+Denní příjem panství je umírněnější a závisí na zvolené daňové politice,
+hodnosti, trhu a hospodářském stavu Starého města. Kruté daně přinášejí více
+zlata, ale dál snižují stabilitu a zvyšují pozornost inkvizice; laskavá správa
+má menší výnos a podporuje stabilitu.
+
 ### Události, návaznosti a karavany
 
 Městské situace se pravidelně objevují v omezené frontě. Hráč může zvolit
@@ -121,6 +140,14 @@ Karavany cestují po existujících hranách mapy. Jejich bezpečný příjezd m
 přinést hráči zlato, městu prosperitu a obchodníkům vliv; špatné podmínky
 zásilku odkloní. Přehled živého světa ukazuje současné karavany, vztahy
 frakcí, nadcházející návazné situace a poslední změny.
+
+### Rozvoj sídla
+
+Panství lze postupně rozšířit z **Černé tvrze** přes **Opevněné sídlo** a
+**Citadelu** až na **Hrad** a **Velký hrad**. Každé rozšíření spotřebuje zlato,
+dřevo, kámen a železo; vyšší stupně navíc vyžadují odpovídající hradby, kasárna
+a tržiště. Náklady jsou zobrazené před stavbou. Starší uložené hry si zachovají
+dosavadní úroveň, budovy a světový stav; nové tržní sklady se doplní při načtení.
 
 Simulace je lokální herní logika, nikoli generativní online AI. Její vývoj
 vychází z uloženého stavu, pravidel systému a herního dne; veškerá rozhodnutí

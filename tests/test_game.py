@@ -2605,8 +2605,8 @@ class HraTesty(unittest.TestCase):
 
         vysledky = hra.pevnost.denni_produkce(hra)
 
-        self.assertEqual(vysledky["obchod"], 203)
-        self.assertEqual(hra.hrac.gold, zlato_pred + vysledky["dane"] + 203)
+        self.assertEqual(vysledky["obchod"], 136)
+        self.assertEqual(hra.hrac.gold, zlato_pred + vysledky["dane"] + 136)
         self.assertTrue(
             any("Diplomatka Mira" in zprava for zprava in vysledky["zpravy"])
         )
@@ -2622,9 +2622,9 @@ class HraTesty(unittest.TestCase):
         vysledky = hra.pevnost.denni_produkce(hra)
 
         self.assertEqual(hra.pevnost.drevo, 70)
-        self.assertEqual(vysledky["obchod"], 165)
+        self.assertEqual(vysledky["obchod"], 140)
         self.assertEqual(
-            hra.hrac.gold, zlato_pred + vysledky["dane"] + vysledky["obchod"]
+            hra.hrac.gold, zlato_pred + vysledky["dane"] + 140
         )
         nactena = Hra.from_dict(hra.to_dict())
         self.assertEqual(nactena.pevnost.obchodni_smlouva, "drevo")
@@ -2638,9 +2638,9 @@ class HraTesty(unittest.TestCase):
 
         vysledky = hra.pevnost.denni_produkce(hra)
 
-        self.assertEqual(vysledky["obchod"], 231)
+        self.assertEqual(vysledky["obchod"], 196)
         self.assertTrue(
-            any("Celní dům vybral +66" in zprava for zprava in vysledky["zpravy"])
+            any("Celní dům vybral +56" in zprava for zprava in vysledky["zpravy"])
         )
 
     def test_budovatelska_strategie_stavba_a_obrana(self):
@@ -2657,9 +2657,51 @@ class HraTesty(unittest.TestCase):
         uspelo, _ = pevnost.vylepsi_budovu("hradby", zlato_hrace=500)
         self.assertTrue(uspelo)
         self.assertEqual(pevnost.budovy.get("hradby"), 1)
-
         obrana = pevnost.celkova_obrana_pevnosti()
         self.assertGreater(obrana, 0)
+
+    def test_sidlo_postupuje_od_tvrze_k_hradu_s_materialy_a_podminkami(self):
+        hra = Hra()
+        pevnost = hra.pevnost
+
+        uspech, _ = pevnost.rozsir_sidlo(hra.hrac)
+
+        self.assertTrue(uspech)
+        self.assertEqual(pevnost.uroven, 2)
+        self.assertEqual(pevnost.nazev_sidla, "Opevněné sídlo")
+        self.assertEqual(hra.hrac.gold, 100)
+        self.assertEqual(pevnost.drevo, 80)
+        self.assertEqual(pevnost.kamen, 40)
+        self.assertEqual(pevnost.zelezo, 30)
+
+        uspech, duvod = pevnost.rozsir_sidlo(hra.hrac)
+        self.assertFalse(uspech)
+        self.assertIn("hradby", duvod)
+
+    def test_trziste_ma_lokalni_zasoby_a_ulozi_se(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        puvodni_zlato = hra.hrac.gold
+        puvodni_zasoby = hra.pevnost.zasoby
+        puvodni_sklad = svet.trziste_sklady["stare_mesto"]["zasoby"]
+        nakupni_cena = svet._cena_na_trzisti("stare_mesto", "zasoby")[0]
+
+        with patch("builtins.input", side_effect=["1", "k", "2"]), redirect_stdout(
+            io.StringIO()
+        ):
+            svet._menu_trziste(hra)
+
+        self.assertEqual(hra.hrac.gold, puvodni_zlato - 2 * nakupni_cena)
+        self.assertEqual(hra.pevnost.zasoby, puvodni_zasoby + 2)
+        self.assertEqual(
+            svet.trziste_sklady["stare_mesto"]["zasoby"],
+            puvodni_sklad - 2,
+        )
+        obnovena = Hra.from_dict(hra.to_dict())
+        self.assertEqual(
+            obnovena.zivy_svet.trziste_sklady,
+            svet.trziste_sklady,
+        )
 
     def test_souboj_s_bojovou_partnerkou(self):
         from game.souboje import Souboj, Nepritel

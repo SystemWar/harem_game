@@ -164,7 +164,7 @@ def vykresli_hlavni_menu(hra):
     )
     print(
         f"{GOLD}{BOLD}║{NC} {RED}☩ Inkvizice {hra.hrac.vliv_inkvizice:<3}{NC}  "
-        f"{CYAN}🏰 Pevnost {hra.pevnost.uroven}{NC}  "
+        f"{CYAN}🏰 {hra.pevnost.nazev_sidla}{NC}  "
         f"📍 {hra.svet.aktualni_lokace} "
         f"{GOLD}{BOLD}║{NC}"
     )

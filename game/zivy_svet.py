@@ -5,6 +5,12 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from data.mesta import DOPADY_AI_NPC, FRAKCNI_ZONY, MESTA, PROFILY_AI_NPC
+from data.frakcni_kroniky import (
+    FRAKCNI_PROFILY,
+    MESTSKE_STAROSTI,
+    TRZNI_ZBOZI,
+    VYCHOZI_SKLADY,
+)
 from game.svet import LOKACE
 from models.mesto import StavMesta
 from utils.decision_ai import vyber_nejlepsi_uzitek, vzdalenosti_od_cilu
@@ -284,6 +290,7 @@ class ZivySvetSystem:
     navazujici_udalosti: list = field(default_factory=list)
     vztahy_frakci: dict = field(default_factory=dict)
     karavany: list = field(default_factory=list)
+    trziste_sklady: dict = field(default_factory=dict)
     dalsi_frakce: int = 0
     dalsi_postava: int = 0
 
@@ -350,6 +357,21 @@ class ZivySvetSystem:
             )
             for mesto_id, definice in MESTA.items()
         }
+        ulozene_sklady = (
+            self.trziste_sklady if isinstance(self.trziste_sklady, dict) else {}
+        )
+        self.trziste_sklady = {}
+        for mesto_id, vychozi_sklad in VYCHOZI_SKLADY.items():
+            sklad = ulozene_sklady.get(mesto_id)
+            sklad = sklad if isinstance(sklad, dict) else {}
+            self.trziste_sklady[mesto_id] = {
+                zbozi_id: max(
+                    0,
+                    min(60, _kladne_cislo(sklad.get(zbozi_id, mnozstvi))),
+                )
+                for zbozi_id, mnozstvi in vychozi_sklad.items()
+                if zbozi_id in TRZNI_ZBOZI
+            }
         ulozena_kontrola = (
             self.kontrola_lokaci if isinstance(self.kontrola_lokaci, dict) else {}
         )
@@ -489,6 +511,7 @@ class ZivySvetSystem:
             "navazujici_udalosti": deepcopy(self.navazujici_udalosti),
             "vztahy_frakci": deepcopy(self.vztahy_frakci),
             "karavany": deepcopy(self.karavany),
+            "trziste_sklady": deepcopy(self.trziste_sklady),
             "dalsi_frakce": self.dalsi_frakce,
             "dalsi_postava": self.dalsi_postava,
         }
@@ -507,6 +530,7 @@ class ZivySvetSystem:
         navazujici_udalosti = data.get("navazujici_udalosti", [])
         vztahy_frakci = data.get("vztahy_frakci", {})
         karavany = data.get("karavany", [])
+        trziste_sklady = data.get("trziste_sklady", {})
         if not isinstance(cile, dict) or not isinstance(postavy, list):
             raise ValueError("Uložený živý svět má neplatný formát.")
         if (
@@ -518,6 +542,7 @@ class ZivySvetSystem:
             or not isinstance(navazujici_udalosti, list)
             or not isinstance(vztahy_frakci, dict)
             or not isinstance(karavany, list)
+            or not isinstance(trziste_sklady, dict)
         ):
             raise ValueError("Uložené události živého světa mají neplatný formát.")
         return cls(
@@ -532,6 +557,7 @@ class ZivySvetSystem:
             navazujici_udalosti=deepcopy(navazujici_udalosti[-5:]),
             vztahy_frakci=deepcopy(vztahy_frakci),
             karavany=deepcopy(karavany[-3:]),
+            trziste_sklady=deepcopy(trziste_sklady),
             dalsi_frakce=_kladne_cislo(data.get("dalsi_frakce", 0)),
             dalsi_postava=_kladne_cislo(data.get("dalsi_postava", 0)),
         )
@@ -545,6 +571,7 @@ class ZivySvetSystem:
         zpravy = []
         for mesto in self.mesta.values():
             mesto.posun_den()
+        self._doplnit_trziste()
         self._vyres_expirovane_udalosti(den, zpravy)
         self._aktivuj_nasledne_udalosti(den, zpravy)
 
@@ -975,6 +1002,134 @@ class ZivySvetSystem:
             "lokace_id": postava.get("lokace", "trh"),
         }
 
+    def _doplnit_trziste(self):
+        for mesto_id, sklad in self.trziste_sklady.items():
+            prosperita = self.mesta[mesto_id].prosperita
+            doplneni = 2 if prosperita >= 60 else 1
+            for zbozi_id in sklad:
+                sklad[zbozi_id] = min(60, sklad[zbozi_id] + doplneni)
+
+    def _cena_na_trzisti(self, mesto_id, zbozi_id):
+        zbozi = TRZNI_ZBOZI[zbozi_id]
+        sklad = self.trziste_sklady[mesto_id][zbozi_id]
+        mesto = self.mesta[mesto_id]
+        nedostatek = max(0.65, min(1.8, 1.45 - sklad / 60))
+        stav_mesta = 0.75 + (mesto.prosperita + mesto.stabilita) / 400
+        nakup = max(1, int(zbozi["cena"] * nedostatek * stav_mesta + 0.5))
+        prodej = max(1, int(nakup * 0.55))
+        return nakup, prodej
+
+    def _menu_trziste(self, hra):
+        lokace = getattr(getattr(hra, "svet", None), "aktualni_lokace", "trh")
+        mesto_id = _mesto_lokace(lokace)
+        mesto = self.mesta[mesto_id]
+        sklad = self.trziste_sklady[mesto_id]
+        dodavatel_id = self.frakce_lokace(lokace)
+        profil_dodavatele = FRAKCNI_PROFILY.get(dodavatel_id)
+        dodavatel = hra.frakce.frakce.get(dodavatel_id)
+        print(
+            f"\n=== TRŽIŠTĚ: {mesto.nazev} ===\n"
+            f"Prosperita {mesto.prosperita} | stabilita {mesto.stabilita} | "
+            f"tvoje zlato {hra.hrac.gold}"
+        )
+        if profil_dodavatele:
+            nazev_dodavatele = dodavatel.nazev if dodavatel else dodavatel_id
+            print(
+                f"Dodavatel: {nazev_dodavatele} — "
+                f"{', '.join(profil_dodavatele['zbozi'])}"
+            )
+        dostupne = tuple(sklad)
+        for index, zbozi_id in enumerate(dostupne, 1):
+            info = TRZNI_ZBOZI[zbozi_id]
+            nakup, prodej = self._cena_na_trzisti(mesto_id, zbozi_id)
+            print(
+                f"  {index}) {info['nazev']}: {sklad[zbozi_id]} {info['jednotka']} "
+                f"| nákup {nakup} zl. | prodej {prodej} zl."
+            )
+        print("  0) Zpět")
+        try:
+            volba = input("Zboží: ").strip()
+            if volba == "0":
+                return
+            index = int(volba) - 1
+            if not 0 <= index < len(dostupne):
+                raise ValueError
+            zbozi_id = dostupne[index]
+            smer = input("Koupit (k) / prodat (p): ").strip().lower()
+            if smer not in ("k", "koupit", "p", "prodat"):
+                tisk_chyba("Zvol k pro nákup nebo p prodej.")
+                return
+            mnozstvi = int(input("Množství (1–20): ").strip())
+        except EOFError:
+            return
+        except ValueError:
+            tisk_chyba("Neplatný výběr nebo množství.")
+            return
+        if not 1 <= mnozstvi <= 20:
+            tisk_chyba("V jednom obchodu lze převést 1 až 20 jednotek.")
+            return
+
+        nakup, prodej = self._cena_na_trzisti(mesto_id, zbozi_id)
+        sklad = self.trziste_sklady[mesto_id]
+        if smer in ("k", "koupit"):
+            cena = nakup * mnozstvi
+            if sklad[zbozi_id] < mnozstvi:
+                tisk_chyba("Místní sklad nemá požadované množství.")
+                return
+            if hra.hrac.gold < cena:
+                tisk_chyba(f"Na nákup potřebuješ {cena} zlata.")
+                return
+            hra.hrac.gold -= cena
+            setattr(hra.pevnost, zbozi_id, getattr(hra.pevnost, zbozi_id) + mnozstvi)
+            sklad[zbozi_id] -= mnozstvi
+            tisk_ok(f"Koupeno {mnozstvi} {TRZNI_ZBOZI[zbozi_id]['jednotka']} za {cena} zlata.")
+        else:
+            dostupne_mnozstvi = getattr(hra.pevnost, zbozi_id)
+            cena = prodej * mnozstvi
+            if dostupne_mnozstvi < mnozstvi:
+                tisk_chyba("Panství nemá tolik zboží na prodej.")
+                return
+            if sklad[zbozi_id] + mnozstvi > 60:
+                tisk_chyba("Místní sklad nemá prostor pro tak velkou dodávku.")
+                return
+            setattr(hra.pevnost, zbozi_id, dostupne_mnozstvi - mnozstvi)
+            hra.hrac.gold += cena
+            sklad[zbozi_id] += mnozstvi
+            tisk_ok(f"Prodáno {mnozstvi} {TRZNI_ZBOZI[zbozi_id]['jednotka']} za {cena} zlata.")
+
+    def _prehled_frakci_a_mest(self, hra):
+        print("\n=== FRAKCE, MĚSTSKÉ STAROSTI A ZBOŽÍ ===")
+        for mesto_id, mesto in self.mesta.items():
+            metrika = min(
+                ("prosperita", "bezpeci", "stabilita"),
+                key=lambda klic: getattr(mesto, klic),
+            )
+            print(
+                f"\n{mesto.nazev} — {MESTSKE_STAROSTI[mesto_id][metrika]} "
+                f"({metrika}: {getattr(mesto, metrika)})"
+            )
+        for frakce_id, profil in FRAKCNI_PROFILY.items():
+            frakce = hra.frakce.frakce.get(frakce_id)
+            nazev = frakce.nazev if frakce else FRAKCNI_CILE[frakce_id][0]
+            mesto = self.mesta[self.frakcni_cile[frakce_id]["mesto_id"]]
+            postava = next(
+                (p for p in self.postavy if p.get("frakce") == frakce_id),
+                None,
+            )
+            kapitola = postava.get("pribeh", 0) if postava else 0
+            dalsi_pribeh = (
+                profil["kapitoly"][kapitola][0]
+                if kapitola < len(profil["kapitoly"])
+                else "příběhová linka uzavřena"
+            )
+            reputace = frakce.reputace if frakce else 0
+            print(
+                f"\n• {nazev} | {mesto.nazev} | reputace {reputace:+d}\n"
+                f"  Starost: {profil['starost']}\n"
+                f"  Nabídka: {', '.join(profil['zbozi'])}\n"
+                f"  Příběh: {dalsi_pribeh}"
+            )
+
     def menu(self, hra):
         while True:
             print("\n=== ŽIVÝ SVĚT ===")
@@ -1040,6 +1195,8 @@ class ZivySvetSystem:
             vytiskni_volbu("1", "Přehled změn, karavan a vztahů frakcí")
             vytiskni_volbu("2", "Dlouhodobé příběhy NPC")
             vytiskni_volbu("3", "Vyjednávat mezi frakcemi")
+            vytiskni_volbu("4", "Místní tržiště — koupit nebo prodat suroviny")
+            vytiskni_volbu("5", "Kronika frakcí, jejich starosti a zboží")
             vytiskni_volbu("0", "Zpět")
             try:
                 volba = input("> ").strip()
@@ -1051,6 +1208,11 @@ class ZivySvetSystem:
                     self._menu_pribehu_npc(hra)
                 elif volba == "3":
                     self._menu_diplomacie_frakci(hra)
+                elif volba == "4":
+                    self._menu_trziste(hra)
+                elif volba == "5":
+                    self._prehled_frakci_a_mest(hra)
+                    input("Enter pro návrat...")
             except EOFError:
                 return
 
@@ -1133,8 +1295,21 @@ class ZivySvetSystem:
                 pass
             return
         kapitola = postava["pribeh"]
+        profil = FRAKCNI_PROFILY.get(postava.get("frakce"))
+        pribehova_kapitola = (
+            profil["kapitoly"][kapitola]
+            if profil and kapitola < len(profil["kapitoly"])
+            else (f"Kapitola {kapitola + 1}", kapitoly[kapitola])
+        )
+        starosti_mesta = MESTSKE_STAROSTI[mesto_id]
+        nejpalcivejsi = min(
+            ("prosperita", "bezpeci", "stabilita"),
+            key=lambda klic: getattr(mesto, klic),
+        )
         print(
-            f"\n{postava['jmeno']} — {kapitoly[kapitola]}\n"
+            f"\n{postava['jmeno']} — {pribehova_kapitola[0]}\n"
+            f"{pribehova_kapitola[1]}\n"
+            f"Městská starost: {starosti_mesta[nejpalcivejsi]}\n"
             f"Vztah {postava['vztah_hraci']:+d} | město {mesto.nazev}: "
             f"stabilita {mesto.stabilita}"
         )

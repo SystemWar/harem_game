@@ -182,6 +182,21 @@ OBCHODNI_SMLOUVY = {
     },
 }
 
+STUPNE_SIDLA = {
+    1: "Černá tvrz",
+    2: "Opevněné sídlo",
+    3: "Citadela",
+    4: "Hrad",
+    5: "Velký hrad",
+}
+
+CENY_ROZSIRENI_SIDLA = {
+    2: {"zlato": 400, "drevo": 40, "kamen": 50, "zelezo": 10},
+    3: {"zlato": 800, "drevo": 90, "kamen": 130, "zelezo": 30},
+    4: {"zlato": 1500, "drevo": 180, "kamen": 260, "zelezo": 65},
+    5: {"zlato": 2600, "drevo": 320, "kamen": 420, "zelezo": 120},
+}
+
 
 @dataclass
 class FortressDevelopment:
@@ -215,6 +230,47 @@ class FortressDevelopment:
             "kamen": int(info.get("cena_kamen", 20) * multi),
             "zelezo": int(info.get("cena_zelezo", 10) * multi),
         }
+
+    @property
+    def nazev_sidla(self):
+        return STUPNE_SIDLA.get(self.uroven, f"{STUPNE_SIDLA[5]} (úroveň {self.uroven})")
+
+    def podminky_rozsireni_sidla(self):
+        cil = self.uroven + 1
+        if cil not in CENY_ROZSIRENI_SIDLA:
+            return False, "Sídlo už dosáhlo nejvyššího stupně."
+        pozadavky = {
+            3: {"hradby": 1},
+            4: {"hradby": 2, "kasarna": 1},
+            5: {"hradby": 3, "kasarna": 2, "trziste": 2},
+        }.get(cil, {})
+        chybi = [
+            f"{PEVNOSTNI_BUDOVY[klic]['nazev']} úrovně {uroven}"
+            for klic, uroven in pozadavky.items()
+            if self.budovy.get(klic, 0) < uroven
+        ]
+        if chybi:
+            return False, "Nejdřív vybuduj: " + ", ".join(chybi) + "."
+        return True, "Rozšíření je připravené."
+
+    def cena_rozsireni_sidla(self):
+        return CENY_ROZSIRENI_SIDLA.get(self.uroven + 1)
+
+    def rozsir_sidlo(self, hrac):
+        lze, zprava = self.podminky_rozsireni_sidla()
+        if not lze:
+            return False, zprava
+        cena = self.cena_rozsireni_sidla()
+        if hrac.gold < cena["zlato"]:
+            return False, f"Chybí {cena['zlato']} zlata."
+        for surovina in ("drevo", "kamen", "zelezo"):
+            if getattr(self, surovina) < cena[surovina]:
+                return False, f"Chybí {cena[surovina]} {surovina}."
+        hrac.gold -= cena["zlato"]
+        for surovina in ("drevo", "kamen", "zelezo"):
+            setattr(self, surovina, getattr(self, surovina) - cena[surovina])
+        self.uroven += 1
+        return True, f"Sídlo povýšeno na stupeň {self.uroven}: {self.nazev_sidla}."
 
     def muze_postavit(self, budova, hrac=None, zlato_hrace=None):
         ceny = self.cena_vylepseni(budova)
@@ -296,7 +352,7 @@ class FortressDevelopment:
         jidlo_zisk = self.budovy.get("statek", 0) * 30
         temno_zisk = self.budovy.get("oltar_stinu", 0) * 4
         krystaly_zisk = self.budovy.get("oltar_stinu", 0) * 2
-        obchod_zisk = self.budovy.get("trziste", 0) * 70
+        obchod_zisk = self.budovy.get("trziste", 0) * 45
 
         # Produkce ze skleníku a alchymistické laboratoře
         sklenik_lvl = self.budovy.get("bylinkovy_sklenik", 0)
@@ -352,9 +408,9 @@ class FortressDevelopment:
             elif b_id == "statek":
                 jidlo_zisk += 20
             elif b_id == "trziste":
-                obchod_bonus = 25 + max(0, int(getattr(otrok, "duvera", 0)) // 10)
+                obchod_bonus = 18 + max(0, int(getattr(otrok, "duvera", 0)) // 12)
                 if char == "diplomatka":
-                    obchod_bonus += 30
+                    obchod_bonus += 22
                     zpravy.append(
                         f"Diplomatka {otrok.jmeno} vyjednala výhodné smlouvy "
                         f"pro tržiště (+{obchod_bonus} 🪙)."
@@ -430,21 +486,34 @@ class FortressDevelopment:
                     o.loajalita = max(0, o.loajalita - 4)
                 zpravy.append("Hladomor v panství! Loajalita otrokyň klesá.")
 
-        # Daňová politika panství
+        # Daňová politika panství: výnos zohledňuje kondici hlavního města.
+        prosperita_mesta = 50
+        stabilita_mesta = 50
+        if hasattr(hra, "zivy_svet"):
+            mesto = hra.zivy_svet.mesta.get("stare_mesto")
+            if mesto:
+                prosperita_mesta = mesto.prosperita
+                stabilita_mesta = mesto.stabilita
         zisk_dani = 0
         if self.danova_politika == "laskava":
-            zisk_dani = 30 + self.uroven * 15
+            zisk_dani = 25 + self.uroven * 12
             hra.hrac.reputace_mesta += 1
+            if hasattr(hra, "zivy_svet") and mesto:
+                mesto.uprav(stabilita=1)
             for o in hra.harem.vsechny_aktivni():
                 o.loajalita = min(100, o.loajalita + 1)
         elif self.danova_politika == "vyvazena":
-            zisk_dani = 90 + self.uroven * 35
+            zisk_dani = 55 + self.uroven * 25
         elif self.danova_politika == "kruta":
-            zisk_dani = 230 + self.uroven * 70
+            zisk_dani = 100 + self.uroven * 40
             hra.hrac.reputace_mesta = max(-50, hra.hrac.reputace_mesta - 1)
             hra.hrac.vliv_inkvizice = min(100, hra.hrac.vliv_inkvizice + 2)
+            if hasattr(hra, "zivy_svet") and mesto:
+                mesto.uprav(stabilita=-1)
             zpravy.append("Kruté desátky přinesly bohatství, ale vzbudily hněv poddaných a inkvizice.")
 
+        koeficient_mesta = 0.7 + (prosperita_mesta + stabilita_mesta) / 400
+        zisk_dani = int(zisk_dani * koeficient_mesta)
         from game.tituly import hodnost, uprav_dan
         titul = hodnost(hra)
         zisk_dani = uprav_dan(zisk_dani, hra)

@@ -8,12 +8,51 @@ from game.save_load import Hra, migrate_save
 from game.zivy_svet import FRAKCNI_AKCE, ZivySvetSystem
 from game.svet import LOKACE
 from data.mesta import MESTA
+from data.frakcni_kroniky import FRAKCNI_PROFILY
 from config import YELLOW
 from models.frakce import FrakcniSystem
 from utils.decision_ai import vzdalenosti_od_cilu, vyber_nejlepsi_uzitek
 
 
 class ZivySvetTesty(unittest.TestCase):
+    def test_vsechny_frakce_maji_unikatni_starost_pribeh_a_zbozi(self):
+        hra = Hra()
+        self.assertEqual(set(FRAKCNI_PROFILY), set(hra.frakce.frakce))
+        for profil in FRAKCNI_PROFILY.values():
+            self.assertTrue(profil["starost"])
+            self.assertEqual(len(profil["kapitoly"]), 3)
+            self.assertTrue(all(nazev and text for nazev, text in profil["kapitoly"]))
+            self.assertGreaterEqual(len(profil["zbozi"]), 2)
+
+        vystup = io.StringIO()
+        with redirect_stdout(vystup):
+            hra.zivy_svet._prehled_frakci_a_mest(hra)
+        for frakce in hra.frakce.frakce.values():
+            self.assertIn(frakce.nazev, vystup.getvalue())
+        self.assertIn("Staré město", vystup.getvalue())
+        self.assertIn("Východní Brod", vystup.getvalue())
+
+    def test_pribeh_npc_zobrazi_fakcni_kapitolu_a_mestskou_starost(self):
+        hra = Hra()
+        with patch("builtins.input", side_effect=["7", "2"]), redirect_stdout(
+            io.StringIO()
+        ) as vystup:
+            hra.zivy_svet._menu_pribehu_npc(hra)
+
+        self.assertIn("Večer pro mecenáše", vystup.getvalue())
+        self.assertIn("Městská starost:", vystup.getvalue())
+        self.assertEqual(hra.zivy_svet.postavy[6]["pribeh"], 1)
+
+    def test_trziste_ma_zasoby_v_obou_mestech_a_denne_se_doplni(self):
+        svet = ZivySvetSystem()
+        stare_mesto_pred = svet.trziste_sklady["stare_mesto"]["zasoby"]
+        brod_pred = svet.trziste_sklady["vychodni_brod"]["zelezo"]
+
+        svet._doplnit_trziste()
+
+        self.assertEqual(svet.trziste_sklady["stare_mesto"]["zasoby"], stare_mesto_pred + 1)
+        self.assertEqual(svet.trziste_sklady["vychodni_brod"]["zelezo"], brod_pred + 1)
+
     def test_vsechny_frakce_maji_cil_a_stav_se_uklada(self):
         svet = ZivySvetSystem()
 

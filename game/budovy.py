@@ -72,7 +72,21 @@ def vystavba_budov(hra, hrac, pevnost):
             print(f"      {DIM}{info['popis']}{NC}")
             print(f"      {GOLD}Cena vylepšení: {cena_str}{NC}")
 
-        print(f"\n  {BOLD}{MAGENTA}U){NC} 🏰 Vylepšit hlavní citadela dominia ({pevnost.uroven} -> {pevnost.uroven + 1}): {GOLD}{400 * pevnost.uroven} 🪙{NC}")
+        cena_sidla = pevnost.cena_rozsireni_sidla()
+        if cena_sidla:
+            lze_rozsirit, podminka = pevnost.podminky_rozsireni_sidla()
+            cena_text = (
+                f"{cena_sidla['zlato']} 🪙, {cena_sidla['drevo']} 🪵, "
+                f"{cena_sidla['kamen']} 🪨, {cena_sidla['zelezo']} ⚒️"
+            )
+            print(
+                f"\n  {BOLD}{MAGENTA}U){NC} 🏰 Rozšířit {pevnost.nazev_sidla} "
+                f"({pevnost.uroven} → {pevnost.uroven + 1}): {GOLD}{cena_text}{NC}"
+            )
+            if not lze_rozsirit:
+                print(f"      {DIM}{podminka}{NC}")
+        else:
+            print(f"\n  🏰 {pevnost.nazev_sidla} — nejvyšší stupeň dosažen.")
         vytiskni_volbu('0', 'Zpět', RED)
 
         try:
@@ -80,13 +94,8 @@ def vystavba_budov(hra, hrac, pevnost):
             if volba == "0":
                 return
             if volba == "u":
-                cena_cit = 400 * pevnost.uroven
-                if hrac.gold >= cena_cit:
-                    hrac.gold -= cena_cit
-                    pevnost.uroven += 1
-                    tisk_ok(f"Citadela panství povýšena na úroveň {pevnost.uroven}! Kapacita a prestiž vzrostla.")
-                else:
-                    tisk_chyba("Nedostatek zlata na vylepšení citadely.")
+                uspech, zprava = pevnost.rozsir_sidlo(hrac)
+                (tisk_ok if uspech else tisk_chyba)(zprava)
                 input("Enter...")
                 continue
 
@@ -540,7 +549,7 @@ def spravovat_budovy(arg0, arg1=None):
         hlavicka(f"🏰 STRATEGIE DOMINIA & ROZVOJ PANSTVÍ 🏰")
 
         obrana_bodu = pevnost.celkova_obrana_pevnosti()
-        print(f"\n{GOLD}Citadela panství:{NC} Úroveň {pevnost.uroven} | {RED}Obranná síla:{NC} {obrana_bodu} bodů | {CYAN}Daňová správa:{NC} {pevnost.danova_politika.upper()}")
+        print(f"\n{GOLD}{pevnost.nazev_sidla}:{NC} Úroveň {pevnost.uroven} | {RED}Obranná síla:{NC} {obrana_bodu} bodů | {CYAN}Daňová správa:{NC} {pevnost.danova_politika.upper()}")
         print(f"{BOLD}Suroviny skladu:{NC} {GOLD}🪙 {hrac.gold} zlata{NC} | {GREEN}🪵 {pevnost.drevo} dřeva{NC} | {WHITE}🪨 {pevnost.kamen} kamene{NC}")
         print(f"                 {CYAN}⚒️ {pevnost.zelezo} železa{NC} | {YELLOW}🌾 {pevnost.zasoby} zásob jídla{NC} | {MAGENTA}🔮 {pevnost.krystaly} krystalů{NC}\n")
 

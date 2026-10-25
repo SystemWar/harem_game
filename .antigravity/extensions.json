@@ -1,0 +1,43 @@
+{
+  "installed": [
+    "agentkey",
+    "azure",
+    "caveman",
+    "cc-skills-golang",
+    "docker-skills",
+    "gemini-cli-security",
+    "github",
+    "google-agents-cli",
+    "google-workspace",
+    "google-workspace-cli",
+    "huggingface-skills",
+    "i-have-adhd",
+    "mobiai-core",
+    "pickle-rick",
+    "ponytail",
+    "skillz",
+    "superpowers",
+    "terraform"
+  ],
+  "enabled": [
+    "agentkey",
+    "azure",
+    "caveman",
+    "cc-skills-golang",
+    "docker-skills",
+    "gemini-cli-security",
+    "github",
+    "google-agents-cli",
+    "google-workspace",
+    "google-workspace-cli",
+    "huggingface-skills",
+    "i-have-adhd",
+    "mobiai-core",
+    "pickle-rick",
+    "ponytail",
+    "skillz",
+    "superpowers",
+    "terraform"
+  ],
+  "updatedAt": "2026-10-25T12:09:49.632Z"
+}

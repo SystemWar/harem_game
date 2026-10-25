@@ -23,6 +23,30 @@ from utils.vypis import barva, hlavicka, vytiskni_volbu
 
 
 class HraTesty(unittest.TestCase):
+    def test_terminalni_ilustrace_pro_postavy_a_lokace_jsou_deterministicke(self):
+        import random
+        from utils.ascii_gen import generuj_scenu
+
+        random.seed(731)
+        stav_pred = random.getstate()
+        portret = generuj_scenu(
+            "portret",
+            jmeno="Lyra",
+            role="Kartografka",
+            charakter="chladna",
+        )
+        lokace = generuj_scenu(
+            "lokace",
+            lokace_id="pristav",
+            lokace={"nazev": "Východní přístav"},
+        )
+
+        self.assertEqual(random.getstate(), stav_pred)
+        self.assertIn("Lyra", portret)
+        self.assertIn("Kartografka", portret)
+        self.assertIn("VÝCHODNÍ PŘÍSTAV", lokace)
+        self.assertIn("~~~~~", lokace)
+
     def test_interakce_zobrazuji_kategorie_a_prehled_ucinku(self):
         from game.interakce import zobraz_interakce
 

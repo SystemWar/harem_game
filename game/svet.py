@@ -1598,6 +1598,11 @@ class SvetSystem:
             clear()
             self.vykresli_ascii_mapu(hra)
             lokace = LOKACE[self.aktualni_lokace]
+            terminalni_obrazek(
+                "lokace",
+                lokace_id=self.aktualni_lokace,
+                lokace=lokace,
+            )
             ikona = lokace.get('ikona', '📍')
             nebezpeci_barva = {
                 "bezpečno": GREEN, "nízké": CYAN, "střední": YELLOW, "vysoké": RED

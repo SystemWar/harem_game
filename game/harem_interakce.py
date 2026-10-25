@@ -308,6 +308,13 @@ def proved_poradu(hra, postavy=None):
 
 def zobraz_profil(otrok):
     hlavicka(f'Profil: {otrok.jmeno}')
+    from utils.vypis import terminalni_obrazek
+    terminalni_obrazek(
+        "portret",
+        jmeno=otrok.jmeno,
+        role=otrok.role,
+        charakter=otrok.charakter,
+    )
     print(f"Věk: {max(18, int(otrok.vek))} | Role: {otrok.role}")
     charakter_id = normalizuj_charakter(otrok.charakter)
     charakter = CHARAKTERY[charakter_id]

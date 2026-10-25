@@ -51,6 +51,11 @@ savy. Řiď se proto názvy zobrazenými ve své hře; nabídka obsahuje mimo ji
 - kasino v Červené čtvrti s kostkami, jednadvacítkou a rozvojem podniku;
 - manželství, rodinu, kroniku, kalendář a nastavení.
 
+Terminálové rozhraní používá barevné ASCII ilustrace: profilům postav přidává
+stylizovaný portrét podle jejich role a lokace mají vlastní malou scenérii.
+Světová mapa dál vyznačuje polohu hráče a barvy frakcí. Jde o textovou grafiku
+bez obrázkových souborů a bez Pygame; zobrazení barev závisí na terminálu.
+
 Klávesa **Q** v hlavním menu otevře rozcestník **Hlavní menu / uložit /
 nahrát / nastavení**, kde lze hru uložit, načíst, otevřít nastavení nebo se
 vrátit do hry. **0** zůstává návratem/ukončením podle právě otevřené nabídky;

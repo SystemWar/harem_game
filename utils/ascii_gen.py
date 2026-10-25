@@ -123,7 +123,7 @@ def generuj_energie(sex: int, max_sex: int, temno: int, max_temno: int) -> str:
 
 
 def generuj_menu(tema: str = "temne_dominium") -> str:
-    o = random.choice(["✦", "✧", "·", "★"])
+    o = "✦"
     return "\n".join([
         f"{VIOLET}       /\\_/\\{NC}",
         f"{MAGENTA}      ( o.o ){NC}   {GOLD}╔════════════════════╗{NC}",
@@ -221,12 +221,78 @@ def generuj_mapu(aktualni: str = "pevnost") -> str:
     ])
 
 
+def generuj_portret(jmeno: str = "", role: str = "", charakter: str = "") -> str:
+    """Vytvoří stylizovaný terminálový portrét bez závislosti na herní náhodě."""
+    popis = f"{role} {charakter}".casefold()
+    if any(klic in popis for klic in ("boj", "amazon", "stráž", "voj")):
+        ikona, barva = "⚔", RED
+    elif any(klic in popis for klic in ("čarod", "alchym", "mág", "kouzel")):
+        ikona, barva = "✦", VIOLET
+    elif any(klic in popis for klic in ("šlecht", "král", "manžel")):
+        ikona, barva = "♕", GOLD
+    elif any(klic in popis for klic in ("obchod", "správ", "kurtiz")):
+        ikona, barva = "◆", MAGENTA
+    else:
+        ikona, barva = "●", CYAN
+
+    jmeno = (jmeno or "POSTAVA").strip()[:16]
+    titul = (role or "Osobnost").strip()[:12]
+    return "\n".join([
+        f"{barva}╭────────────────╮{NC}",
+        f"{barva}│{NC}     .----.     {barva}│{NC}",
+        f"{barva}│{NC}    / .  . \\    {barva}│{NC}",
+        f"{barva}│{NC}   |    ∿   |   {barva}│{NC}",
+        f"{barva}│{NC}    \\ '──' /    {barva}│{NC}",
+        f"{barva}│{NC}      /|\\       {barva}│{NC}",
+        f"{barva}│{NC}     / | \\      {barva}│{NC}",
+        f"{barva}│{NC}   {ikona} {jmeno:<11} {barva}│{NC}",
+        f"{barva}│{NC}   {titul:<12} {barva}│{NC}",
+        f"{barva}╰────────────────╯{NC}",
+    ])
+
+
+def generuj_lokacni_pohled(lokace_id: str = "", lokace: Optional[dict] = None) -> str:
+    """Vytvoří malou ilustraci prostředí pro obrazovku navštívené lokace."""
+    lokace = lokace or {}
+    identifikace = f"{lokace_id} {lokace.get('nazev', '')}".casefold()
+    if any(klic in identifikace for klic in ("pevnost", "hrad", "citadel")):
+        barva = GRAY
+        kresba = ["     /\\       /\\     ", "    /  \\_____/  \\    ", "   |  []  []  [] |   ", "   |____  ____ __|   "]
+    elif any(klic in identifikace for klic in ("pristav", "dok", "molo", "zátok")):
+        barva = BLUE
+        kresba = ["       |\\        ", "   ____| \\___    ", "   \\________/    ", "  ~~~ ~~~~~ ~~~  "]
+    elif any(klic in identifikace for klic in ("les", "haj", "zahrad", "park")):
+        barva = GREEN
+        kresba = ["      &&&   &&&   ", "     &&&&& &&&&&  ", "       ||    ||   ", "  _/\\_/\\__/\\_/\\_ "]
+    elif any(klic in identifikace for klic in ("chram", "svaty", "kapl")):
+        barva = VIOLET
+        kresba = ["        /\\        ", "       /  \\       ", "      /____\\      ", "      | [] |      "]
+    else:
+        barva = GOLD
+        kresba = ["      ______      ", "     / ____ \\     ", "    /_/____\\_\\    ", "      | [] |      "]
+
+    nazev = lokace.get("nazev", lokace_id or "MÍSTO")
+    return "\n".join([
+        f"{barva}  ·  ✦  ·  {nazev.upper()}  ·  ✦  ·{NC}",
+        *(f"{barva}{radek}{NC}" for radek in kresba),
+    ])
+
+
 def generuj_scenu(scena: str, **kwargs) -> str:
     scena = (scena or "menu").lower()
     generatory = {
         "menu": generuj_menu,
         "harem": lambda: generuj_harem(kwargs.get("pocet", 3), kwargs.get("oblibena", False), kwargs.get("loajalita", 50)),
         "mapa": lambda: generuj_mapu(kwargs.get("aktualni", "pevnost")),
+        "portret": lambda: generuj_portret(
+            kwargs.get("jmeno", ""),
+            kwargs.get("role", ""),
+            kwargs.get("charakter", ""),
+        ),
+        "lokace": lambda: generuj_lokacni_pohled(
+            kwargs.get("lokace_id", ""),
+            kwargs.get("lokace"),
+        ),
         "souboj": lambda: generuj_souboj(kwargs.get("nepritel", "BOSS")),
         "osudy": lambda: "\n".join([f"{VIOLET}          .-=========-.{NC}", f"{GOLD}         /  KNIHA OSUDŮ \\{NC}", f"{CYAN}        |  {'✦ ' * random.randint(2, 4)} |{NC}", f"{VIOLET}         \\_____________/{NC}"]),
         "odmena": lambda: generuj_odmenu(kwargs.get("uroven", 1)),

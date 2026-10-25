@@ -45,6 +45,27 @@ class Harem:
         partnerky = sum(1 for o in aktivni if getattr(o, "partnerka", False))
         loajalita_avg = sum(getattr(o, "loajalita", 0) for o in aktivni) / len(aktivni)
         bonus = oblibena * 8 + partnerky * 6 + int(loajalita_avg / 10)
+        obsazene_pozice = {
+            getattr(o, "role", "") for o in aktivni
+            if not getattr(o, "na_najmu", False)
+        }
+        bonus += 5 * sum(
+            pozice in obsazene_pozice
+            for pozice in ("správkyně dílny", "pokladní")
+        )
+        hra = getattr(self, "_hra_ref", None)
+        if hra and getattr(getattr(hra, "nevestinec", None), "otevreno", False):
+            if "správkyně nevěstince" in obsazene_pozice:
+                bonus += 8
+        if hra:
+            for jmeno, marriage in getattr(hra, "marriage_system", {}).items():
+                if not marriage.je_vdana() or marriage.pozice == "choť":
+                    continue
+                if marriage.pozice == "spravkyne_panstvi":
+                    bonus += 10
+                elif marriage.pozice == "mecenaska":
+                    if getattr(hra.nevestinec, "otevreno", False):
+                        bonus += 12
         try:
             from game.charakter_bonusy import bonus_prijmu_haremu
             bonus += bonus_prijmu_haremu(getattr(self, "_hra_ref", None))

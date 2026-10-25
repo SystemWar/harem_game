@@ -69,7 +69,7 @@ Po spuštění hry vstoupíš do hlavního herního menu. Zadáváš čísla neb
 | `5` | **Diplomacie** | Vztahy s frakcemi (Inkvizice, Syndikát, Podsvětí) |
 | `6` | **Výzkum** | Technologický strom dominia |
 | `7` | **Domestikace** | Hloubkové zlomení vůle a psychologické podmínění |
-| `8` | **Mapa světa** | Cestování po 40 lokacích, NPC, questy |
+| `8` | **Mapa světa** | Cestování po 45 lokacích ve dvou propojených městech, NPC a questy |
 | `9` | **Kampaň** | Hlavní příběhová linie s kapitolami |
 | `22` | **Deník úkolů** | Aktivní běžné a NPC úkoly, dostupné úkoly a postup kampaně |
 | `11` | **Lov otrokyň** | Získání nových žen (trh, únos, duel) |
@@ -96,6 +96,7 @@ Po spuštění hry vstoupíš do hlavního herního menu. Zadáváš čísla neb
 | `32` | **Kalendář a události** | Sezóna a historie posledních událostí světa |
 | `35` | **Správa frakcí** | Přehled a správa městských frakcí |
 | `36` | **Živý svět** | Denní cíle frakcí, pohyb NPC a situace s několika možnostmi zásahu |
+| `37` | **Najímání personálu** | Najmi průzkumníky, heroldy, správce, lékaře či velitele a přiděluj jim mise |
 | `A` | **Auto tah** | Bezpečný automatický tah |
 | `S/L/M` | Zkratky | Save / Load / Menu |
 | `0` | **Konec** | Uložit a ukončit |
@@ -128,10 +129,17 @@ rivalova ultimáta může oslabit kontrolu nad nejzranitelnějším územím; vy
 dohody místo toho na několik dní zabrání dalším rivalovým ultimátům.
 
 Verze 2.0 přidává samostatnou simulaci živého světa: každá frakce sleduje vlastní
-cíl, postavy se mezi lokacemi přesouvají a jejich činnost se zaznamenává.
+cíl, postavy si podle potřeb měst volí trasu po mapě a jejich činnost mění
+prosperitu, bezpečí či stabilitu. Východní Brod je druhé město napojené na
+přístavní cesty; jeho pět lokací, NPC a místní akce se postupně odhalují.
 Dokončené cíle vytvářejí rozhodovací nabídky s podporou, kompromisem i možností
-nezasahovat. Stav cílů, postav, historie a nevyřízených nabídek se ukládá do save;
-starší uložené hry se při načtení bezpečně doplní.
+nezasahovat. Stav měst, cílů, postav, historie a nevyřízených nabídek se ukládá
+do save; starší uložené hry dostanou výchozí stav měst při načtení.
+Vojáky a kapitány najímáš ve správě podsvětí (`3`); jejich denní žold a rozkazy
+lze spravovat společně s novým personálem. Průzkumníci objevují mapu, heroldi
+šíří pověst, správci zajišťují příjem a zdravotníci či velitelé pomáhají při
+denním provozu. Manželky lze jmenovat do dvorských funkcí; jejich schopnosti a
+vzdělávání dětí jsou v nabídce manželství a rodiny.
 
 ---
 
@@ -346,7 +354,7 @@ Postupuj žebříčkem a porážej stále silnější protivníky. Na vrcholu č
 
 ---
 
-## 🗺️ Mapa světa — 40 lokací (Menu 8)
+## 🗺️ Mapa světa — 45 lokací ve dvou městech (Menu 8)
 
 Cestuj po světě, prozkoumávej lokace a plň lokační úkoly.
 Mapa nově obsahuje také 14 propojených městských čtvrtí, včetně čtvrtí
@@ -366,7 +374,7 @@ nebo je hledej pomocí lokačních akcí.
 
 ### Lokační akce
 
-Každá ze 40 lokací má vlastní pověst a nabídku tematických akcí. Nové čtvrti
+Každá z 45 lokací má vlastní pověst a nabídku tematických akcí. Nové čtvrti
 nabízejí lokální zdroje, výzkumné body, reputaci frakcí a další cesty.
 Průzkumná odměna i placený kontakt v každé čtvrti lze získat jednou za herní
 den; stav se ukládá a po přechodu na další den se obnoví.

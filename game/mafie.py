@@ -118,6 +118,7 @@ def najmout_vojaka(hrac, mafie: Mafie, cena=50):
         return False
     hrac.gold -= cena
     mafie.vojaci += 1
+    mafie.placena_armada = True
     tisk_ok("Najat voják do podsvětní gardy.")
     return True
 
@@ -127,6 +128,7 @@ def najmout_kapitana(hrac, mafie: Mafie, cena=250):
         return False
     hrac.gold -= cena
     mafie.kapitanove = getattr(mafie, "kapitanove", 0) + 1
+    mafie.placena_armada = True
     tisk_ok("Najat podsvětní kapitán (+5 bojová síla, vedení oddílů).")
     return True
 
@@ -346,6 +348,14 @@ def spravovat_mafii(arg0, arg1=None):
             f"Vojáci: {mafie.vojaci} | Kapitáni: {getattr(mafie, 'kapitanove', 0)} | "
             f"Informátoři: {getattr(mafie, 'informatori', 0)}"
         )
+        print(
+            f"Rozkaz armády: {getattr(mafie, 'rozkaz_armady', 'hlidkovat')} | "
+            f"Morálka: {getattr(mafie, 'moral_armady', 0)}"
+            + (
+                f" | žold {mafie.vojaci + mafie.kapitanove * 4} zl./den"
+                if getattr(mafie, "placena_armada", False) else ""
+            )
+        )
         print(f"Celkový pasivní příjem: {mafie.vypocet_prijmu()} zlaťáků/den")
         print(f"Korupce: {mafie.korupce} | Vliv ve městě: {getattr(mafie, 'vliv_ve_meste', 0)}%\n")
 
@@ -360,10 +370,12 @@ def spravovat_mafii(arg0, arg1=None):
         print(f"{MAGENTA}7) Válka o území / syndikáty")
         print(f"{CYAN}8) Nelegální podniky v územích (doupata, nevěstince, herny)")
         print(f"{YELLOW}9) Vydírání hodnostářů & podplácení stráží")
+        print(f"{WHITE}10) Personál dominia — nábor a samostatné mise")
+        print(f"{RED}11) Rozkazy armádě — výcvik, hlídky, patrola, tažení")
         print(f"{NC}0) Zpět")
 
         try:
-            volba = nacti_volbu({str(cislo) for cislo in range(10)})
+            volba = nacti_volbu({str(cislo) for cislo in range(12)})
         except EOFError:
             return
         if volba == "0":
@@ -464,6 +476,16 @@ def spravovat_mafii(arg0, arg1=None):
                 return
         elif volba == "9":
             vydirani_a_korupce(hrac, mafie, hra)
+            try:
+                input("Enter...")
+            except EOFError:
+                return
+        elif volba == "10":
+            from game.personel import menu_personalu
+            menu_personalu(hra)
+        elif volba == "11":
+            from game.personel import nastav_rozkaz_armady
+            nastav_rozkaz_armady(hra)
             try:
                 input("Enter...")
             except EOFError:

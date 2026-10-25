@@ -485,7 +485,13 @@ def _obsluz_volbu_hlavniho_menu(
     elif volba == "2":
         aktivni = hra.harem.vsechny_aktivni()
         if aktivni:
-            volne = [o for o in aktivni if not o.na_najmu]
+            volne = [
+                o for o in aktivni
+                if not o.na_najmu
+                and not o.je_manzelkou
+                and not o.partnerka
+                and not o.v_nevestinci
+            ]
             if volne:
                 print("\nVyber otrokyni k pronájmu:")
                 for i, o in enumerate(volne, 1):
@@ -574,7 +580,7 @@ def _obsluz_volbu_hlavniho_menu(
         menu_energie(hra)
     elif volba == "28":
         menu_manzelstvi(hra)
-    elif volba in ("29", "30", "31", "32", "33", "34", "35", "36", "37"):
+    elif volba in ("29", "30", "31", "32", "33", "34", "35", "36", "37", "38"):
         obsluz_extra_volbu(volba, hra)
     elif volba == "26":
         vysledek = menu_meta_hlavni(hra)

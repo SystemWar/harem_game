@@ -41,4 +41,8 @@ def obsluz_extra_volbu(volba, hra):
     if volba == "37":
         hra.zivy_svet.menu(hra)
         return True
+    if volba == "38":
+        from game.personel import menu_personalu
+        menu_personalu(hra)
+        return True
     return False

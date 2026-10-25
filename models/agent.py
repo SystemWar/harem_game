@@ -9,6 +9,10 @@ class Agent:
     xp: int = 0
     odhaleny: bool = False
     unaveny: int = 0
+    ukol: str = ""
+    cil_lokace: str = ""
+    plat: int = 0
+    posledni_akce: str = ""
 
     def to_dict(self):
         return asdict(self)

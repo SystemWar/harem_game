@@ -12,6 +12,11 @@ from utils.vypis import (
 from game.predmety import PREDMETY
 from data.jmena import vyber_nove_jmeno
 from data.charaktery import vyber_charakter
+from data.mesta import (
+    AKCE_VYCHODNIHO_BRODU,
+    LOKACE_VYCHODNIHO_BRODU,
+    MESTA,
+)
 from models.mafie import LOKACE_PODLE_UZEMI
 
 LOKACE = {
@@ -423,6 +428,10 @@ LOKACE = {
     },
 }
 
+LOKACE.update(LOKACE_VYCHODNIHO_BRODU)
+LOKACE["pristav"]["sousedni"].append("vychodni_pristav")
+LOKACE["molo_mesicniho_pristavu"]["sousedni"].append("vychodni_pristav")
+
 for lokace_id, informace in LOKACE.items():
     for soused_id in informace["sousedni"]:
         if soused_id not in LOKACE:
@@ -473,6 +482,11 @@ POVESTI_LOKACI = {
     "kanalove_pruplavy": "U každé třetí lávky je vyrytá značka převozníků. Nikdo se neshodne, zda ukazuje hloubku, nebo cenu průchodu.",
     "botanicke_zahrady": "Zahradníci nechávají jednu bránu pootevřenou; za ní roste rostlina, kterou v městských knihách nenajdeš.",
     "kupecke_ulice": "Každý obchodník tu nabízí drobnou slevu výměnou za zprávu, kterou jinde nesmí vyslovit.",
+    "vychodni_pristav": "Převozníci na tomto molu poznají z pečeti, která karavana potřebuje doprovod ještě před příjezdem.",
+    "vychodni_trziste": "Ceny obilí se mění podle stavu zahrad za řekou a hlídek na mostě.",
+    "rada_vychodniho_brodu": "Na nástěnce rady zůstávají nevyřešené žádosti obyvatel; jejich pořadí se mění podle důvěry města.",
+    "vychodni_kasarna": "Na mapě hlídek jsou vyznačené brody, které se objeví jen při nízké hladině řeky.",
+    "vychodni_zahrady": "Zavlažovací kanály vedou podél staré cesty a jejich oprava by spojila zahrady s tržištěm.",
 }
 
 VYCHOZI_ODHALENE = [
@@ -576,6 +590,8 @@ AKCE_MESTSKYCH_CTVRTI = {
         "zdroj": {"id": "krystal_sily", "nazev": "Krystal síly", "mnozstvi": 2},
     },
 }
+
+AKCE_MESTSKYCH_CTVRTI.update(AKCE_VYCHODNIHO_BRODU)
 
 NPC = {
     "mira": {
@@ -821,6 +837,34 @@ NPC = {
         "vek": 36,
         "dialogy": [
             "Když se komíny odmlčí, město poslouchá. Dnes v noci slyším něco, co se mi nelíbí.",
+        ],
+    },
+    "mira_vychodni": {
+        "jmeno": "Mira, léčitelka Východního Brodu",
+        "popis": "Terénní léčitelka, která organizuje pomoc v osadách za řekou.",
+        "lokace": "vychodni_zahrady",
+        "vek": 30,
+        "dialogy": [
+            "Zahrady uživí celé město, pokud se podaří opravit zavlažovací kanály.",
+            "Lidé nepotřebují další sliby. Potřebují bezpečné cesty a otevřenou ošetřovnu.",
+        ],
+    },
+    "rovan_kapitan": {
+        "jmeno": "Kapitán Rovan",
+        "popis": "Velitel pohraniční hlídky, který chrání most a říční karavany.",
+        "lokace": "vychodni_kasarna",
+        "vek": 43,
+        "dialogy": [
+            "Most udržíme, jestli se rada přestane přít o to, kdo zaplatí opravy.",
+        ],
+    },
+    "vesna_radni": {
+        "jmeno": "Vesna, vyjednavačka městské rady",
+        "popis": "Radní, která hledá dohodu mezi obchodníky, hlídkami a obyvateli.",
+        "lokace": "rada_vychodniho_brodu",
+        "vek": 38,
+        "dialogy": [
+            "Východní Brod se může stát spojencem, ale nejdřív musí uvěřit, že o něj stojíme.",
         ],
     },
 }
@@ -1136,6 +1180,15 @@ class SvetSystem:
             typ = LOKACE[lok_id].get("typ_ctvrti")
             typ_txt = f"  ·  {typ}" if typ else ""
             print(f"  {u(lok_id, 10)}{typ_txt}  ⇄  {sousedi}{zdroj_txt}")
+        banner_lokace(
+            MESTA["vychodni_brod"]["nazev"].upper(),
+            MESTA["vychodni_brod"]["popis"],
+        )
+        for lok_id in MESTA["vychodni_brod"]["lokace"]:
+            sousedi = "  ↔  ".join(
+                u(soused, 8) for soused in LOKACE[lok_id]["sousedni"]
+            )
+            print(f"  {u(lok_id, 12)}  ⇄  {sousedi}")
         print(
             f"\n{DIM}Legenda: {GREEN}▶[... ]◀{NC}{DIM} poloha | "
             f"🎯 aktivní úkol | 🛡️ tvoje území | 👤 NPC | 👹 neporažený boss | "

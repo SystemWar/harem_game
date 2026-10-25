@@ -1561,10 +1561,11 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("34"), "35")
         self.assertEqual(normalizuj_volbu("35"), "36")
         self.assertEqual(normalizuj_volbu("36"), "37")
+        self.assertEqual(normalizuj_volbu("37"), "38")
         self.assertEqual(normalizuj_volbu("s"), "26")
         self.assertEqual(
             list(MAPOVANI_CISEL_MENU),
-            [str(cislo) for cislo in range(1, 37)],
+            [str(cislo) for cislo in range(1, 38)],
         )
         self.assertEqual(normalizuj_volbu("$"), "cheat")
         self.assertEqual(normalizuj_volbu("&"), "cheat_suroviny")
@@ -1582,6 +1583,7 @@ class HraTesty(unittest.TestCase):
         self.assertNotIn("#) 📈 Cheat:", vystup.getvalue())
         self.assertNotIn("*) 🏗️ Cheat:", vystup.getvalue())
         self.assertNotIn(":) 💚 Cheat:", vystup.getvalue())
+
         self.assertIn("10)", vystup.getvalue())
         self.assertIn("🎯 Lov otrokyň", vystup.getvalue())
         self.assertIn("31)", vystup.getvalue())
@@ -1751,6 +1753,22 @@ class HraTesty(unittest.TestCase):
         ) as uloz, redirect_stdout(io.StringIO()):
             hlavni_menu(hra)
         uloz.assert_called_once_with(hra)
+
+    def test_mrizkove_menu_ma_spravne_cislovani_rozsireni(self):
+        from game.menu_hlavni import vykresli_hlavni_menu
+
+        hra = Hra()
+        hra.nastaveni.styl_menu = "mrizka"
+        vystup = io.StringIO()
+        with redirect_stdout(vystup):
+            vykresli_hlavni_menu(hra)
+
+        text = vystup.getvalue()
+        self.assertIn("34) Specializace čtvrtí", text)
+        self.assertIn("35) Správa frakcí", text)
+        self.assertIn("36) Živý svět a NPC", text)
+        self.assertIn("37) Najímání personálu", text)
+        self.assertNotIn("38) Najímání personálu", text)
 
     def test_hlavni_menu_doporucuje_konretni_cil_a_podminky_postupu(self):
         from game.cile_hry import prehled_cilu
@@ -2118,7 +2136,7 @@ class HraTesty(unittest.TestCase):
         self.assertIn("katakomby", LOKACE)
         self.assertIn("svatyne_krvaveho_mesice", LOKACE)
         self.assertIn("palac_bohatych", LOKACE)
-        self.assertEqual(len(LOKACE), 40)
+        self.assertEqual(len(LOKACE), 45)
         self.assertEqual(len(NOVE_MESTSKE_LOKACE), 14)
         self.assertEqual(
             {
@@ -2295,6 +2313,13 @@ class HraTesty(unittest.TestCase):
             "kanalove_pruplavy": ("1", "2", "3", "4"),
             "botanicke_zahrady": ("1", "2", "3", "4"),
             "kupecke_ulice": ("1", "2", "3", "4"),
+        })
+        akce.update({
+            "vychodni_pristav": ("1", "2", "3"),
+            "vychodni_trziste": ("1", "2", "3"),
+            "rada_vychodniho_brodu": ("1", "2", "3"),
+            "vychodni_kasarna": ("1", "2", "3"),
+            "vychodni_zahrady": ("1", "2", "3"),
         })
 
         for lokace, volby in akce.items():

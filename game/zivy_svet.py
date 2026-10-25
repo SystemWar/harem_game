@@ -4,6 +4,10 @@ import random
 from copy import deepcopy
 from dataclasses import dataclass, field
 
+from data.mesta import DOPADY_AI_NPC, MESTA, PROFILY_AI_NPC
+from game.svet import LOKACE
+from models.mesto import StavMesta
+from utils.decision_ai import vyber_nejlepsi_uzitek, vzdalenosti_od_cilu
 from utils.vypis import tisk_chyba, tisk_info, tisk_ok, vytiskni_volbu
 
 
@@ -18,18 +22,6 @@ FRAKCNI_CILE = {
     "narkomani": ("Omezit pouliční krize", "Dobrovolníci hledají bezpečnější pomoc pro lidi v nouzi."),
     "cyberpunkaci": ("Ovládnout městskou datovou síť", "Technici opravují uzly a obchodují s ověřenými informacemi."),
     "nymfomanky": ("Uspořádat dobrovolný slavnostní večer", "Organizátorky připravují společenskou akci s jasnými pravidly účasti."),
-}
-
-POHYB_NPC = {
-    "pevnost": ("trh", "les"),
-    "trh": ("pevnost", "pristav", "ctvrt_remeselniku", "hostinec"),
-    "pristav": ("trh", "paserska_zatoka", "palac_bohatych"),
-    "hostinec": ("trh", "pevnost", "ctvrt_remeselniku"),
-    "akademie": ("trh", "observator", "ctvrt_remeselniku"),
-    "cechovni_ulicky": ("trh", "ctvrt_remeselniku", "pulnocni_trh"),
-    "chram_cistoty": ("trh", "akademicke_namesti", "vezeni_inkvizice"),
-    "palac_bohatych": ("trh", "pristav", "cervena_ctvrt"),
-    "cervena_ctvrt": ("trh", "palac_bohatych", "hostinec"),
 }
 
 VYCHOZI_POSTAVY = (
@@ -96,6 +88,33 @@ VYCHOZI_POSTAVY = (
             "Rozšiřuje síť bezpečných a dobrovolných společenských setkání.",
         ),
     },
+    {
+        "id": "mira_vychodni", "jmeno": "Mira z Brodu",
+        "role": "Léčitelka říčních osad", "frakce": "policie",
+        "lokace": "vychodni_zahrady", "duvera": 0,
+        "akce": (
+            "Zřídila ošetřovnu pro karavanové dělníky.",
+            "Pomohla obyvatelům opravit zavlažovací kanál.",
+        ),
+    },
+    {
+        "id": "rovan_kapitan", "jmeno": "Kapitán Rovan",
+        "role": "Velitel pohraniční hlídky", "frakce": "policie",
+        "lokace": "vychodni_kasarna", "duvera": 0,
+        "akce": (
+            "Zkontroloval hlídky u východního mostu.",
+            "Doprovodil karavanu přes nebezpečný úsek cesty.",
+        ),
+    },
+    {
+        "id": "vesna_radni", "jmeno": "Vesna z městské rady",
+        "role": "Vyjednavačka Východního Brodu", "frakce": "obchodnici",
+        "lokace": "rada_vychodniho_brodu", "duvera": 0,
+        "akce": (
+            "Zprostředkovala jednání mezi radou a cechy.",
+            "Vyjednala zásoby pro čtvrti za řekou.",
+        ),
+    },
 )
 
 MOZNOSTI_ZASAHU = (
@@ -112,6 +131,7 @@ class ZivySvetSystem:
     postavy: list = field(default_factory=lambda: deepcopy(VYCHOZI_POSTAVY))
     nabidky: list = field(default_factory=list)
     historie: list = field(default_factory=list)
+    mesta: dict = field(default_factory=dict)
     dalsi_frakce: int = 0
     dalsi_postava: int = 0
 
@@ -142,6 +162,20 @@ class ZivySvetSystem:
                 postava = next(p for p in self.postavy if p.get("id") == definice["id"])
                 for klic, hodnota in definice.items():
                     postava.setdefault(klic, hodnota)
+        ulozena_mesta = self.mesta if isinstance(self.mesta, dict) else {}
+        self.mesta = {
+            mesto_id: StavMesta.from_dict(
+                ulozena_mesta.get(mesto_id),
+                {
+                    "ident": mesto_id,
+                    "nazev": definice["nazev"],
+                    "prosperita": definice["prosperita"],
+                    "bezpeci": definice["bezpeci"],
+                    "stabilita": definice["stabilita"],
+                },
+            )
+            for mesto_id, definice in MESTA.items()
+        }
         self.nabidky = [
             nabidka for nabidka in self.nabidky
             if isinstance(nabidka, dict)
@@ -166,6 +200,10 @@ class ZivySvetSystem:
             "postavy": deepcopy(self.postavy),
             "nabidky": deepcopy(self.nabidky),
             "historie": deepcopy(self.historie[-30:]),
+            "mesta": {
+                mesto_id: mesto.to_dict()
+                for mesto_id, mesto in self.mesta.items()
+            },
             "dalsi_frakce": self.dalsi_frakce,
             "dalsi_postava": self.dalsi_postava,
         }
@@ -178,9 +216,14 @@ class ZivySvetSystem:
         postavy = data.get("postavy", [])
         nabidky = data.get("nabidky", [])
         historie = data.get("historie", [])
+        mesta = data.get("mesta", {})
         if not isinstance(cile, dict) or not isinstance(postavy, list):
             raise ValueError("Uložený živý svět má neplatný formát.")
-        if not isinstance(nabidky, list) or not isinstance(historie, list):
+        if (
+            not isinstance(nabidky, list)
+            or not isinstance(historie, list)
+            or not isinstance(mesta, dict)
+        ):
             raise ValueError("Uložené události živého světa mají neplatný formát.")
         return cls(
             posledni_den=_kladne_cislo(data.get("posledni_den", 0)),
@@ -188,6 +231,7 @@ class ZivySvetSystem:
             postavy=deepcopy(postavy),
             nabidky=deepcopy(nabidky),
             historie=deepcopy(historie[-30:]),
+            mesta=deepcopy(mesta),
             dalsi_frakce=_kladne_cislo(data.get("dalsi_frakce", 0)),
             dalsi_postava=_kladne_cislo(data.get("dalsi_postava", 0)),
         )
@@ -199,6 +243,8 @@ class ZivySvetSystem:
             return []
         self.posledni_den = den
         zpravy = []
+        for mesto in self.mesta.values():
+            mesto.posun_den()
 
         frakce_ids = tuple(FRAKCNI_CILE)
         vedlejsi_frakce = random.choice(
@@ -226,9 +272,16 @@ class ZivySvetSystem:
 
         postava = self.postavy[self.dalsi_postava % len(self.postavy)]
         self.dalsi_postava = (self.dalsi_postava + 1) % len(self.postavy)
-        moznosti = POHYB_NPC.get(postava.get("lokace"), ("trh", "pevnost"))
-        nova_lokace = random.choice(moznosti)
+        nova_lokace = self._rozhodni_pohyb_npc(postava)
+        if not nova_lokace:
+            nova_lokace = postava.get("lokace", "trh")
         postava["lokace"] = nova_lokace
+        if hasattr(hra, "svet"):
+            hra.svet.odhal_lokaci(nova_lokace)
+        mesto_id = _mesto_lokace(nova_lokace)
+        dopad = DOPADY_AI_NPC.get(postava.get("id"))
+        if dopad and mesto_id in self.mesta:
+            self.mesta[mesto_id].uprav_akci(*dopad)
         akce = postava["akce"]
         if isinstance(akce, (tuple, list)):
             akce = random.choice(akce)
@@ -240,6 +293,47 @@ class ZivySvetSystem:
         self.historie.extend({"den": den, "text": zprava} for zprava in zpravy)
         self.historie = self.historie[-30:]
         return zpravy
+
+    def _rozhodni_pohyb_npc(self, postava):
+        """NPC volí trasu k městu, kde jeho specializace nejvíc pomůže."""
+        aktualni = postava.get("lokace", "trh")
+        if aktualni not in LOKACE:
+            aktualni = "trh"
+        profil = PROFILY_AI_NPC.get(postava.get("id"))
+        sousedi = LOKACE[aktualni]["sousedni"]
+        if not sousedi:
+            return aktualni
+        if not profil:
+            return sousedi[0]
+
+        metrika = profil["metrika"]
+        smer = profil["smer"]
+        mesto_cil = vyber_nejlepsi_uzitek(
+            (
+                mesto_id,
+                (
+                    100 - getattr(mesto, metrika)
+                    if smer == "minimum"
+                    else getattr(mesto, metrika)
+                ),
+            )
+            for mesto_id, mesto in self.mesta.items()
+        )
+        lokace_cile = MESTA[mesto_cil]["lokace"]
+        vzdalenosti = vzdalenosti_od_cilu(
+            {lokace_id: data["sousedni"] for lokace_id, data in LOKACE.items()},
+            lokace_cile,
+        )
+        kandidati = [lokace for lokace in sousedi if lokace in vzdalenosti]
+        if aktualni in lokace_cile:
+            kandidati = [
+                lokace for lokace in kandidati
+                if lokace in lokace_cile
+            ] or kandidati
+        vybrany = vyber_nejlepsi_uzitek(
+            (lokace, -vzdalenosti[lokace]) for lokace in kandidati
+        )
+        return vybrany or aktualni
 
     def _vytvor_nabidku(self, frakce_id, den):
         definice = self.frakcni_cile[frakce_id]
@@ -256,6 +350,7 @@ class ZivySvetSystem:
             "cilek": definice["nazev"],
             "text": definice["popis"],
             "postava": postava["jmeno"],
+            "mesto_id": _mesto_lokace(postava.get("lokace", "trh")),
         }
 
     def menu(self, hra):
@@ -271,6 +366,12 @@ class ZivySvetSystem:
                 print(
                     f"  {postava['jmeno']} — {postava['role']}, "
                     f"{postava['lokace'].replace('_', ' ')}"
+                )
+            print("\nStav měst:")
+            for mesto_id, mesto in self.mesta.items():
+                print(
+                    f"  {mesto.nazev}: prosperita {mesto.prosperita}, "
+                    f"bezpečí {mesto.bezpeci}, stabilita {mesto.stabilita}"
                 )
             if self.nabidky:
                 nabidka = self.nabidky[0]
@@ -336,6 +437,14 @@ class ZivySvetSystem:
                 -100,
                 min(100, hra.hrac.reputace_mesta + moznost["mesto"]),
             )
+            mesto = self.mesta.get(nabidka.get("mesto_id", "stare_mesto"))
+            if mesto:
+                dopady = (
+                    {"prosperita": 2, "stabilita": 1},
+                    {"bezpeci": 1, "stabilita": 2},
+                    {"bezpeci": -1, "stabilita": -2},
+                )
+                mesto.uprav(**dopady[index])
             tisk_ok(f"Rozhodl ses: {moznost['text']}.")
             self._zapis(hra, nabidka, moznost["text"])
             return True
@@ -358,3 +467,7 @@ def _kladne_cislo(hodnota):
         return max(0, int(hodnota))
     except (TypeError, ValueError):
         return 0
+
+
+def _mesto_lokace(lokace_id):
+    return LOKACE.get(lokace_id, {}).get("mesto", "stare_mesto")

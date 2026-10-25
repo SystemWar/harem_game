@@ -155,6 +155,10 @@ def odpocinek(hra, rezim=None):
         tisk_ok(f"🏛️ Nevěstinec: denní tržba +{prijem_nevestinec} 🪙")
     if prijem_vyzkum > 0:
         tisk_ok(f"🔬 Výzkumné obchodní sítě: +{prijem_vyzkum} 🪙")
+    from game.personel import zpracuj_denni_personal
+    zpracuj_denni_personal(hra)
+    from game.manzelstvi import aplikuj_vykon_manzelek
+    aplikuj_vykon_manzelek(hra)
     if hasattr(hra, "pevnost") and hra.pevnost is not None:
         try:
             from game.tituly import zaznamenej_povyseni

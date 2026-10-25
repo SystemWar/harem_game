@@ -77,17 +77,25 @@ def _osobni_akce(hra, otrok):
         if not proved_peci(hra, otrok):
             tisk_chyba("Nemáš dost zlata na péči.")
     elif volba == "3":
-        role = input("Role (stráž/řemesla/vyjednávání/zpravodajství): ").strip().lower()
+        role = input(
+            "Pozice (stráž/řemesla/vyjednávání/zpravodajství/"
+            "pokladnice/správkyně nevěstince): "
+        ).strip().lower()
         role_map = {
             "stráž": ("strážkyně", "obrana", 2),
             "řemesla": ("správkyně dílny", "obchod", 2),
             "vyjednávání": ("vyjednavačka", "vyjednavani", 2),
             "zpravodajství": ("zpravodajka", "temnota", 2),
+            "pokladnice": ("pokladní", "obchod", 2),
+            "správkyně nevěstince": ("správkyně nevěstince", "vyjednavani", 2),
         }
         if role not in role_map:
             tisk_chyba("Neznámá role.")
         else:
             nazev, dovednost, bonus = role_map[role]
+            if role == "správkyně nevěstince" and not hra.nevestinec.otevreno:
+                tisk_chyba("Nejdřív otevři nevěstinec v nabídce 21.")
+                return
             stara_role = otrok.role
             otrok.role = nazev
             if stara_role != nazev:

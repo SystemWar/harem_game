@@ -53,6 +53,9 @@ class Mafie:
     korupce: int = 0
     vliv_ve_meste: int = 0
     bossove_porazeni: List[str] = field(default_factory=list)
+    rozkaz_armady: str = "hlidkovat"
+    moral_armady: int = 0
+    placena_armada: bool = False
 
     def vypocet_prijmu(self):
         zaklad = sum(u.prijem * u.kontrola // 100 for u in self.uzemi if u.obsazeno)
@@ -62,7 +65,10 @@ class Mafie:
         return self.prijem_celkem
 
     def bojova_sila(self):
-        return self.vojaci * 1 + self.kapitanove * 5 + self.vliv_ve_meste // 10
+        return (
+            self.vojaci * 1 + self.kapitanove * 5
+            + self.vliv_ve_meste // 10 + self.moral_armady // 20
+        )
 
     def to_dict(self):
         return {
@@ -74,6 +80,9 @@ class Mafie:
             "korupce": self.korupce,
             "vliv_ve_meste": self.vliv_ve_meste,
             "bossove_porazeni": list(self.bossove_porazeni),
+            "rozkaz_armady": self.rozkaz_armady,
+            "moral_armady": self.moral_armady,
+            "placena_armada": self.placena_armada,
         }
 
     @classmethod
@@ -86,6 +95,14 @@ class Mafie:
         m.informatori = data.get("informatori", 0)
         m.korupce = data.get("korupce", 0)
         m.vliv_ve_meste = data.get("vliv_ve_meste", 0)
+        rozkazy = {"hlidkovat", "vycvik", "patrolovat", "tažení"}
+        rozkaz = data.get("rozkaz_armady", "hlidkovat")
+        m.rozkaz_armady = rozkaz if rozkaz in rozkazy else "hlidkovat"
+        try:
+            m.moral_armady = max(0, min(100, int(data.get("moral_armady", 0))))
+        except (TypeError, ValueError):
+            m.moral_armady = 0
+        m.placena_armada = bool(data.get("placena_armada", False))
         porazeni = data.get("bossove_porazeni", [])
         if isinstance(porazeni, list):
             m.bossove_porazeni = list(dict.fromkeys(

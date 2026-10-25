@@ -52,7 +52,12 @@ def proved_najem_otrokyně(
     klient = KLIENTI.get(klient_id)
     if klient is None or doba_volba not in AUKCNI_DOBA:
         return False
-    if otrok.hp <= 0 or otrok.na_najmu:
+    if (
+        otrok.hp <= 0 or otrok.na_najmu
+        or getattr(otrok, "je_manzelkou", False)
+        or getattr(otrok, "partnerka", False)
+        or getattr(otrok, "v_nevestinci", False)
+    ):
         return False
 
     cena = spocitej_cenu_najmu(hrac, otrok, klient_id, obtiznost)
@@ -92,6 +97,12 @@ def najem_otrokyně(hrac: Hrac, otrok: Otrokyně, obtiznost="normalni"):
     klient = KLIENTI[volba]
     if otrok.hp <= 0:
         tisk_chyba("Tato otrokyně není v dostatečném stavu pro nájem.")
+        return False
+    if getattr(otrok, "je_manzelkou", False) or getattr(otrok, "partnerka", False):
+        tisk_chyba("Manželka ani partnerka není dostupná pro nájem.")
+        return False
+    if getattr(otrok, "v_nevestinci", False):
+        tisk_chyba("Postava už má pracovní zařazení v nevěstinci.")
         return False
     if otrok.na_najmu:
         tisk_chyba("Otrokyně je již na najmu.")

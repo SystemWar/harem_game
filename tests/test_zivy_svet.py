@@ -6,7 +6,10 @@ from unittest.mock import patch
 from game.menu_hlavni import normalizuj_volbu
 from game.save_load import Hra, migrate_save
 from game.zivy_svet import ZivySvetSystem
+from game.svet import LOKACE
+from data.mesta import MESTA
 from models.frakce import FrakcniSystem
+from utils.decision_ai import vzdalenosti_od_cilu, vyber_nejlepsi_uzitek
 
 
 class ZivySvetTesty(unittest.TestCase):
@@ -24,7 +27,12 @@ class ZivySvetTesty(unittest.TestCase):
     def test_denni_tah_pohybuje_npc_a_neopakuje_se(self):
         hra = Hra()
         hra.hrac.den = 2
-        postava_pred = hra.zivy_svet.postavy[0]["lokace"]
+        postava = hra.zivy_svet.postavy[0]
+        postava_pred = postava["lokace"]
+        vzdalenosti = vzdalenosti_od_cilu(
+            {lokace: data["sousedni"] for lokace, data in LOKACE.items()},
+            MESTA["vychodni_brod"]["lokace"],
+        )
 
         zpravy = hra.zivy_svet.posun_den(hra)
         druhy_vysledek = hra.zivy_svet.posun_den(hra)
@@ -32,6 +40,10 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertTrue(zpravy)
         self.assertEqual(druhy_vysledek, [])
         self.assertNotEqual(hra.zivy_svet.postavy[0]["lokace"], postava_pred)
+        self.assertLess(
+            vzdalenosti[postava["lokace"]],
+            vzdalenosti[postava_pred],
+        )
         self.assertEqual(hra.zivy_svet.posledni_den, 2)
 
     def test_dokonceny_frakcni_cil_vytvori_nabidku_s_rozhodnutim(self):
@@ -66,6 +78,24 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertEqual(hra.frakce.frakce["policie"].reputace, reputace_pred + 8)
         self.assertEqual(hra.hrac.reputace_mesta, mesto_pred + 1)
 
+    def test_rozhodnuti_frakcni_situace_meni_stav_prislusneho_mesta(self):
+        hra = Hra()
+        mesto = hra.zivy_svet.mesta["vychodni_brod"]
+        bezpeci_pred = mesto.bezpeci
+        stabilita_pred = mesto.stabilita
+        nabidka = {
+            "frakce_id": "policie",
+            "frakce_nazev": "Policie",
+            "cilek": "hlídky",
+            "mesto_id": "vychodni_brod",
+        }
+
+        with patch("builtins.input", return_value="2"), redirect_stdout(io.StringIO()):
+            self.assertTrue(hra.zivy_svet._vyres_nabidku(hra, nabidka))
+
+        self.assertEqual(mesto.bezpeci, bezpeci_pred + 1)
+        self.assertEqual(mesto.stabilita, stabilita_pred + 2)
+
     def test_menu_a_migrace_starych_savu(self):
         hra = Hra()
         data = hra.to_dict()
@@ -78,6 +108,55 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertEqual(normalizuj_volbu("36"), "37")
         obnoveno = Hra.from_dict(migrovano)
         self.assertIsInstance(obnoveno.zivy_svet, ZivySvetSystem)
+
+    def test_vychodni_mesto_je_propojene_a_cestovatelne(self):
+        hra = Hra()
+        hra.svet.aktualni_lokace = "pristav"
+        hra.svet.odhal_lokaci("vychodni_pristav")
+        hra.svet.odhal_lokaci("vychodni_trziste")
+        hra.svet.odhal_lokaci("pristav")
+
+        with patch("random.random", return_value=0.99):
+            self.assertTrue(hra.svet.cestuj("vychodni_pristav", hra))
+            self.assertTrue(hra.svet.cestuj("vychodni_trziste", hra))
+
+        self.assertIn("vychodni_pristav", LOKACE["pristav"]["sousedni"])
+        self.assertIn("vychodni_pristav", hra.svet.odhalene_lokace)
+
+    def test_ai_najde_nejkratsi_cestu_k_cili_a_zvazuje_uzitek(self):
+        graf = {
+            "pevnost": ("trh", "les"),
+            "trh": ("pevnost", "pristav"),
+            "pristav": ("trh", "vychodni_pristav"),
+            "vychodni_pristav": ("pristav", "vychodni_trziste"),
+            "vychodni_trziste": ("vychodni_pristav",),
+            "les": ("pevnost",),
+        }
+
+        vzdalenosti = vzdalenosti_od_cilu(graf, ("vychodni_trziste",))
+
+        self.assertEqual(vzdalenosti["pevnost"], 4)
+        self.assertEqual(
+            vyber_nejlepsi_uzitek((("bezpecna", 1), ("rizikova", 3))),
+            "rizikova",
+        )
+
+    def test_zivy_svet_ulozi_stav_druheho_mesta_a_ai_cil(self):
+        hra = Hra()
+        hra.zivy_svet.mesta["vychodni_brod"].uprav(bezpeci=-8, prosperita=12)
+        hra.hrac.den = 2
+        hra.zivy_svet.posun_den(hra)
+
+        obnovena = Hra.from_dict(hra.to_dict())
+
+        self.assertEqual(
+            obnovena.zivy_svet.mesta["vychodni_brod"].prosperita,
+            hra.zivy_svet.mesta["vychodni_brod"].prosperita,
+        )
+        self.assertIn(
+            hra.zivy_svet.postavy[0]["lokace"],
+            hra.svet.odhalene_lokace,
+        )
 
 
 if __name__ == "__main__":

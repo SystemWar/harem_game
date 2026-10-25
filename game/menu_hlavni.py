@@ -8,6 +8,7 @@ from config import (
 from utils.vypis import ascii_art, banner_lokace, terminalni_obrazek, ukazatel
 from game.cile_hry import prehled_cilu
 from game.tituly import dalsi_titul, hodnost, zaznamenej_povyseni
+from data.mesta import MESTA
 
 
 POLOZKY_HLAVNIHO_MENU = (
@@ -47,6 +48,7 @@ POLOZKY_HLAVNIHO_MENU = (
     ("35", "🏭 Specializace čtvrtí"),
     ("36", "🏴 Správa městských frakcí"),
     ("37", "🌍 Živý svět, cíle frakcí a NPC"),
+    ("38", "👥 Najímání personálu a mise"),
 )
 
 ZKRATKY_HLAVNIHO_MENU = {
@@ -71,7 +73,7 @@ MAPOVANI_CISEL_MENU = {
 KATEGORIE_HLAVNIHO_MENU = (
     ("👑 HARÉM & VZTAHY", (1, 7, 14, 20, 22, 27, 29, 30)),
     ("🏰 PANSTVÍ & IMPÉRIUM", (2, 3, 5, 6, 12, 15)),
-    ("🗺️ SVĚT, FRAKCE & DOBRODRUŽSTVÍ", (8, 9, 10, 13, 21, 26, 28, 31, 32, 33, 34, 35, 36)),
+    ("🗺️ SVĚT, FRAKCE & DOBRODRUŽSTVÍ", (8, 9, 10, 13, 21, 26, 28, 31, 32, 33, 34, 35, 36, 37)),
     ("⚙️ POSTAVA & PROVOZ", (4, 11, 16, 17, 18, 19, 23, 24, 25)),
 )
 
@@ -105,6 +107,21 @@ def vykresli_prehled_ctvrti(hra):
         )
     else:
         print("  Zatím neznáš žádnou z propojených městských čtvrtí.")
+
+    vychodni_lokace = MESTA["vychodni_brod"]["lokace"]
+    vychodni_odhalene = sum(
+        lokace in hra.svet.odhalene_lokace for lokace in vychodni_lokace
+    )
+    stav = getattr(hra, "zivy_svet", None)
+    mesto = getattr(stav, "mesta", {}).get("vychodni_brod") if stav else None
+    stav_txt = (
+        f" | bezpečí {mesto.bezpeci}, prosperita {mesto.prosperita}"
+        if mesto else ""
+    )
+    print(
+        f"  🌉 {MESTA['vychodni_brod']['nazev']}: "
+        f"{vychodni_odhalene}/{len(vychodni_lokace)} míst odhaleno{stav_txt}"
+    )
 
     lok_id = hra.svet.aktualni_lokace
     zdroj = AKCE_MESTSKYCH_CTVRTI.get(lok_id, {}).get("zdroj")
@@ -221,24 +238,28 @@ def vykresli_hlavni_menu(hra):
             for cislo in cisla:
                 print(f"  {YELLOW}{cislo:>2}){NC} {popisy[cislo]}")
     elif styl == "mrizka":
+        kratke_podle_interniho = {
+            "1": "Interakce s harémem", "2": "Nájem", "3": "Mafie a území",
+            "4": "Vývoj postavy", "5": "Diplomacie", "6": "Výzkum",
+            "7": "Domestikace", "8": "Mapa a lokace", "9": "Příběhová kampaň",
+            "11": "Lov", "12": "Odpočinek", "13": "Obchod",
+            "14": "Questy", "15": "Dražba", "16": "Budovy dominia",
+            "17": "Grafy a statistiky", "18": "Souboj a aréna",
+            "19": "Alchymie", "20": "Přehled dne", "21": "Nevěstinec",
+            "22": "Deník úkolů", "23": "Profily a vztahy",
+            "24": "Crafting", "25": "Dobít energii", "26": "Uložit a nastavení",
+            "27": "Průvodce", "28": "Manželství", "29": "Kronika",
+            "30": "Denní rozkazy", "31": "Veřejný výkon",
+            "32": "Kalendář", "33": "Městské krize",
+            "34": "Story questy harému", "35": "Specializace čtvrtí",
+            "36": "Správa frakcí", "37": "Živý svět a NPC",
+            "38": "Najímání personálu",
+        }
         kratke_popisy = {
-            1: "Interakce s harémem", 2: "Nájem", 3: "Mafie a území",
-            4: "Vývoj postavy", 5: "Diplomacie", 6: "Výzkum",
-            7: "Domestikace", 8: "Mapa a lokace", 9: "Příběhová kampaň",
-            10: "Lov", 11: "Odpočinek", 12: "Obchod",
-            13: "Questy", 14: "Dražba", 15: "Budovy dominia",
-            16: "Grafy a statistiky", 17: "Souboj a aréna", 18: "Alchymie",
-            19: "Přehled dne", 20: "Nevěstinec", 21: "Deník úkolů",
-            22: "Profily a vztahy", 23: "Crafting", 24: "Dobít energii",
-            25: "Uložit a nastavení", 26: "Průvodce", 27: "Manželství",
-            28: "Kronika", 29: "Denní rozkazy", 30: "Veřejný výkon",
-            31: "Veřejný výkon",
-            32: "Kalendář",
-            33: "Městské krize",
-            34: "Story questy harému",
-            35: "Specializace čtvrtí",
-            35: "Správa frakcí",
-            36: "Živý svět a NPC",
+            cislo: kratke_podle_interniho.get(stare_cislo, popis)
+            for cislo, (stare_cislo, popis) in enumerate(
+                POLOZKY_HLAVNIHO_MENU, 1
+            )
         }
         print(f"{CYAN}{BOLD}╔════ 📜 HLAVNÍ MENU — MŘÍŽKA ═══════════════════════════════════════════════╗{NC}")
         cisla = list(kratke_popisy)

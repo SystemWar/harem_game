@@ -13,6 +13,7 @@ class Marriage:
     cerem_puvab: int = 50  # Jak poutavá byla svatba (0-100)
     intimita_level: int = 0  # 0-100, roste s každou interakcí
     role_manzelky: str = "vedlejsi"  # "hlavni", "vedlejsi", "konkubina"
+    pozice: str = "choť"
     zarlivost: int = 0  # 0-100, roste při zanedbávání nebo preferování jiné
     spokojenost: int = 70  # 0-100, ovlivňuje loajalitu a atmosféru v harému
 
@@ -53,6 +54,7 @@ class Marriage:
             "jmeno": jmeno,
             "pohlavi": pohlavi,
             "vek": 0,
+            "vek_dni": 0,
             "loajalita": 70,
             "talent": random.randint(30, 100),
             "typ": random.choice(["bojovník", "kouzelník", "průzkumník"]),
@@ -61,11 +63,14 @@ class Marriage:
         self.deti.append(dite)
         return dite
     
-    def starne_deti(self):
-        """Postárne všechna dítka o rok."""
+    def starne_deti(self, dni=1):
+        """Přičítá dětem herní dny a zvýší jejich věk jednou za herní rok."""
         for dite in self.deti:
             if dite["status"] == "žije":
-                dite["vek"] += 1
+                dite["vek_dni"] = max(0, int(dite.get("vek_dni", 0))) + dni
+                while dite["vek_dni"] >= 365:
+                    dite["vek_dni"] -= 365
+                    dite["vek"] = max(0, int(dite.get("vek", 0))) + 1
     
     def to_dict(self):
         return asdict(self)

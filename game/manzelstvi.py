@@ -158,6 +158,135 @@ def zobraz_postaveni_partnerstvi(otrokyne, marriage):
             else:
                 print(f"  {i}) {dite['jmeno']} ({dite['status']})")
 
+
+def nastav_pozici_manzelky(hra):
+    from game.kronika import zaznamenej
+    vdane = [
+        postava for postava in hra.harem.vsechny_aktivni()
+        if postava.je_manzelkou
+        and hra.marriage_system.get(postava.jmeno)
+        and hra.marriage_system[postava.jmeno].je_vdana()
+    ]
+    if not vdane:
+        tisk_chyba("Nejdřív potřebuješ alespoň jednu aktivní manželku.")
+        return False
+    print("Vyber manželku, které chceš změnit dvorskou funkci:")
+    for index, postava in enumerate(vdane, 1):
+        marriage = hra.marriage_system[postava.jmeno]
+        print(f"{index}) {postava.jmeno} — {marriage.pozice}")
+    try:
+        vyber = int(input("> ")) - 1
+        if not 0 <= vyber < len(vdane):
+            raise IndexError
+        postava = vdane[vyber]
+    except (ValueError, IndexError):
+        tisk_chyba("Neplatná volba.")
+        return False
+    marriage = hra.marriage_system[postava.jmeno]
+    funkce = {
+        "1": ("choť", "Choť — bez správní funkce"),
+        "2": ("spravkyne_panstvi", "Správkyně panství — +10 zlata denně"),
+        "3": ("radkyne", "Dvorní rádkyně — +1 městská reputace denně"),
+        "4": ("velitelka", "Vrchní velitelka — +2 morálka armády denně"),
+        "5": ("mecenaska", "První mecenáška — +12 zlata/den při otevřeném nevěstinci"),
+    }
+    for klic, (_ident, text) in funkce.items():
+        vytiskni_volbu(klic, text)
+    try:
+        ident, text = funkce[input("> ").strip()]
+    except KeyError:
+        tisk_chyba("Neplatná funkce.")
+        return False
+    if ident != "choť":
+        for jina in vdane:
+            jina_marriage = hra.marriage_system[jina.jmeno]
+            if jina_marriage is not marriage and jina_marriage.pozice == ident:
+                jina_marriage.pozice = "choť"
+                tisk_info(f"{jina.jmeno} uvolnila tuto funkci a zůstává chotí.")
+    marriage.pozice = ident
+    zaznamenej(hra, f"{postava.jmeno} převzala dvorskou funkci: {text}.")
+    tisk_ok(f"{postava.jmeno} nyní zastává funkci: {text}.")
+    return True
+
+
+def aplikuj_vykon_manzelek(hra):
+    zpravy = []
+    for marriage in hra.marriage_system.values():
+        if not marriage.je_vdana():
+            continue
+        if marriage.pozice == "radkyne":
+            pred = hra.hrac.reputace_mesta
+            hra.hrac.reputace_mesta = min(100, pred + 1)
+            if hra.hrac.reputace_mesta > pred:
+                zpravy.append(f"Dvorní rádkyně {marriage.partner_jmeno}: reputace města +1.")
+        elif marriage.pozice == "velitelka":
+            pred = hra.mafie.moral_armady
+            hra.mafie.moral_armady = min(100, pred + 2)
+            if hra.mafie.moral_armady > pred:
+                zpravy.append(f"Vrchní velitelka {marriage.partner_jmeno}: morálka armády +2.")
+        elif marriage.pozice == "prvni_dama":
+            for jina in hra.marriage_system.values():
+                if jina is not marriage and jina.je_vdana():
+                    jina.zmen_zarlivost(-2)
+    for zprava in zpravy:
+        tisk_info(zprava)
+    return zpravy
+
+
+def vychovat_dite(hra):
+    from game.kronika import zaznamenej
+    rodiny = [
+        marriage for marriage in hra.marriage_system.values()
+        if marriage.je_vdana()
+        and any(dite.get("status") == "žije" for dite in marriage.deti)
+    ]
+    deti = [
+        (marriage, dite)
+        for marriage in rodiny
+        for dite in marriage.deti
+        if dite.get("status") == "žije"
+    ]
+    if not deti:
+        tisk_info("Zatím nemáš děti, které by šlo vzdělávat.")
+        return False
+    for index, (marriage, dite) in enumerate(deti, 1):
+        print(
+            f"{index}) {dite['jmeno']} — {marriage.partner_jmeno}, "
+            f"{dite['typ']}, talent {dite['talent']}"
+        )
+    try:
+        vyber = int(input("Dítě: ")) - 1
+        if not 0 <= vyber < len(deti):
+            raise IndexError
+        marriage, dite = deti[vyber]
+    except (ValueError, IndexError):
+        tisk_chyba("Neplatná volba.")
+        return False
+    if hra.hrac.gold < 60:
+        tisk_chyba("Vzdělání dítěte stojí 60 zlata.")
+        return False
+    obory = ("bojovník", "kouzelník", "průzkumník")
+    for index, obor in enumerate(obory, 1):
+        vytiskni_volbu(str(index), f"Vzdělávat jako {obor}")
+    try:
+        vyber_oboru = int(input("Obor: ")) - 1
+        if not 0 <= vyber_oboru < len(obory):
+            raise IndexError
+        obor = obory[vyber_oboru]
+    except (ValueError, IndexError):
+        tisk_chyba("Neplatný obor.")
+        return False
+    hra.hrac.gold -= 60
+    dite["typ"] = obor
+    dite["talent"] = min(100, int(dite.get("talent", 0)) + 5)
+    dite["loajalita"] = min(100, int(dite.get("loajalita", 0)) + 3)
+    zaznamenej(hra, f"Dítě {dite['jmeno']} zahájilo studium oboru {obor}.")
+    tisk_ok(
+        f"{dite['jmeno']} zahájilo studium oboru {obor}; "
+        f"talent {dite['talent']} %, loajalita {dite['loajalita']} %."
+    )
+    return True
+
 def jmenovat_hlavni_manzelku(hra):
     clear()
     print(f"{GOLD}{BOLD}=== Jmenování První manželky (První dáma Dominia) ==={NC}\n")
@@ -183,9 +312,12 @@ def jmenovat_hlavni_manzelku(hra):
                 m = hra.marriage_system.get(o.jmeno)
                 if m:
                     m.role_manzelky = "vedlejsi"
+                    if m.pozice == "prvni_dama":
+                        m.pozice = "choť"
             m_vybrana = hra.marriage_system.get(vybrana.jmeno)
             if m_vybrana:
                 m_vybrana.role_manzelky = "hlavni"
+                m_vybrana.pozice = "prvni_dama"
                 m_vybrana.zarlivost = 0
                 m_vybrana.spokojenost = 100
             vybrana.loajalita = min(100, vybrana.loajalita + 15)
@@ -325,6 +457,8 @@ def menu_manzelstvi(hra):
         vytiskni_volbu('6', '🌙 Společná noc manželek (stmelení chotí, snížení žárlivosti)')
         vytiskni_volbu('7', '⚡ Řešení harémového sporu (urovnání žárlivosti a intrik)')
         vytiskni_volbu('8', '👑 Jmenovat První manželku dominia')
+        vytiskni_volbu('9', '🏛️ Spravovat dvorské funkce a hierarchii')
+        vytiskni_volbu('10', '📚 Vzdělávat děti a určit jejich dráhu')
         vytiskni_volbu('0', 'Zpět')
         try:
             volba = input("> ").strip().lower()
@@ -434,6 +568,12 @@ def menu_manzelstvi(hra):
             reseni_haremoveho_sporu(hra)
         elif volba == "8":
             jmenovat_hlavni_manzelku(hra)
+        elif volba == "9":
+            nastav_pozici_manzelky(hra)
+            input("Enter...")
+        elif volba == "10":
+            vychovat_dite(hra)
+            input("Enter...")
         else:
             tisk_chyba("Neplatná volba.")
             input("Enter...")

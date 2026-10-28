@@ -137,6 +137,13 @@ situace mají důsledky pro městské ukazatele a zaznamenávají se do historie
 Některá rozhodnutí naplánují pokračování o několik dní později, například
 oživení tržiště, bezpečnější čtvrť nebo potíže se zásobami.
 
+Každý dvanáctý herní den může město s nejhorším souhrnným stavem dostat
+iniciativu jedné z frakcí, která v něm působí. Situaci přináší konkrétní NPC,
+její text vychází ze starosti frakce a poslední zaznamenané akce postavy.
+Podpora zlepší odpovídající ukazatel města, reputaci frakce i vztah s poslem;
+ignorování naopak zhorší místní stav a vztah. Iniciativy a jejich průběh se
+ukládají společně se stavem živého světa.
+
 Karavany cestují po existujících hranách mapy. Jejich bezpečný příjezd může
 přinést hráči zlato, městu prosperitu a obchodníkům vliv; špatné podmínky
 zásilku odkloní. Přehled živého světa ukazuje současné karavany, vztahy

@@ -392,6 +392,84 @@ class ZivySvetTesty(unittest.TestCase):
             "test-linky",
         )
 
+    def test_frakcni_iniciativa_reaguje_na_mesto_a_zapoji_npc(self):
+        hra = Hra()
+        mesto = hra.zivy_svet.mesta["vychodni_brod"]
+        mesto.uprav(prosperita=-20, bezpeci=-30, stabilita=-10)
+        hra.hrac.den = 12
+
+        zpravy = hra.zivy_svet.posun_den(hra)
+
+        udalost = next(
+            udalost for udalost in hra.zivy_svet.udalosti_mesta
+            if udalost["typ"] == "frakcni_iniciativa"
+        )
+        self.assertEqual(udalost["mesto_id"], "vychodni_brod")
+        self.assertEqual(udalost["metrika"], "bezpeci")
+        self.assertTrue(udalost["npc_id"])
+        self.assertTrue(any("iniciativa:" in zprava for zprava in zpravy))
+        self.assertIn("žádá o pomoc", udalost["text"])
+
+        obnovena = Hra.from_dict(hra.to_dict())
+        ulozena = next(
+            udalost for udalost in obnovena.zivy_svet.udalosti_mesta
+            if udalost["typ"] == "frakcni_iniciativa"
+        )
+        self.assertEqual(ulozena["npc_id"], udalost["npc_id"])
+        self.assertEqual(ulozena["metrika"], "bezpeci")
+        self.assertEqual(ulozena["text"], udalost["text"])
+
+    def test_podpora_frakcni_iniciativy_zmeni_mesto_frakci_i_vztah_npc(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        udalost = svet._vytvor_frakcni_iniciativu(12)
+        mesto = svet.mesta[udalost["mesto_id"]]
+        npc = next(
+            postava for postava in svet.postavy
+            if postava["id"] == udalost["npc_id"]
+        )
+        metrika_pred = getattr(mesto, udalost["metrika"])
+        reputace_pred = hra.frakce.frakce[udalost["frakce_id"]].reputace
+        vztah_pred = npc["vztah_hraci"]
+        zlato_pred = hra.hrac.gold
+
+        with patch("builtins.input", return_value="1"), redirect_stdout(io.StringIO()):
+            self.assertTrue(svet._vyres_udalost_mesta(hra, udalost))
+
+        self.assertEqual(getattr(mesto, udalost["metrika"]), metrika_pred + 4)
+        self.assertEqual(hra.hrac.gold, zlato_pred - 25)
+        self.assertEqual(
+            hra.frakce.frakce[udalost["frakce_id"]].reputace,
+            reputace_pred + 5,
+        )
+        self.assertEqual(npc["vztah_hraci"], vztah_pred + 4)
+
+    def test_ignorovana_frakcni_iniciativa_ma_dusledek(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        udalost = svet._vytvor_frakcni_iniciativu(12)
+        mesto = svet.mesta[udalost["mesto_id"]]
+        npc = next(
+            postava for postava in svet.postavy
+            if postava["id"] == udalost["npc_id"]
+        )
+        metrika_pred = getattr(mesto, udalost["metrika"])
+        reputace_pred = hra.frakce.frakce[udalost["frakce_id"]].reputace
+
+        with patch("builtins.input", return_value="0"), redirect_stdout(io.StringIO()):
+            self.assertTrue(svet._vyres_udalost_mesta(hra, udalost))
+
+        ocekavany_pokles = 3 if udalost["metrika"] == "stabilita" else 2
+        self.assertEqual(
+            getattr(mesto, udalost["metrika"]),
+            metrika_pred - ocekavany_pokles,
+        )
+        self.assertEqual(
+            hra.frakce.frakce[udalost["frakce_id"]].reputace,
+            reputace_pred - 2,
+        )
+        self.assertEqual(npc["vztah_hraci"], -1)
+
     def test_karavana_postupuje_po_propojene_trase_a_je_ulozitelna(self):
         hra = Hra()
         hra.hrac.den = 5

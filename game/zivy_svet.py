@@ -265,6 +265,13 @@ UDALOSTI_MESTA = {
         ),
         "zanik": {"prosperita": -2, "stabilita": -1},
     },
+    "frakcni_iniciativa": {
+        "frakce": "policie",
+        "nazev": "Městská iniciativa",
+        "text": "Místní postava žádá o podporu pro svou čtvrť.",
+        "volby": (),
+        "zanik": {"stabilita": -1},
+    },
 }
 
 MISTA_UDALOSTI = {
@@ -274,6 +281,7 @@ MISTA_UDALOSTI = {
     "trzni_oziveni": {"stare_mesto": "trh", "vychodni_brod": "vychodni_trziste"},
     "trzni_nepokoj": {"stare_mesto": "trh", "vychodni_brod": "vychodni_trziste"},
     "bezpecna_ctvrt": {"stare_mesto": "hostinec", "vychodni_brod": "vychodni_kasarna"},
+    "frakcni_iniciativa": {"stare_mesto": "trh", "vychodni_brod": "vychodni_trziste"},
 }
 
 
@@ -406,11 +414,60 @@ class ZivySvetSystem:
                     continue
                 udalost = deepcopy(udalost)
                 udalost["den"] = max(0, udalost["den"])
-                udalost["nazev"] = UDALOSTI_MESTA[udalost["typ"]]["nazev"]
-                udalost["text"] = UDALOSTI_MESTA[udalost["typ"]]["text"]
+                if udalost["typ"] == "frakcni_iniciativa":
+                    frakce_id = udalost.get("frakce_id")
+                    if frakce_id not in FRAKCNI_CILE:
+                        frakce_id = "policie"
+                    udalost["frakce_id"] = frakce_id
+                    npc_id = udalost.get("npc_id")
+                    if not isinstance(npc_id, str) or not any(
+                        postava.get("id") == npc_id for postava in self.postavy
+                    ):
+                        npc_id = next(
+                            (
+                                postava.get("id") for postava in self.postavy
+                                if postava.get("frakce") == frakce_id
+                            ),
+                            "",
+                        )
+                    udalost["npc_id"] = npc_id
+                    metrika = udalost.get("metrika")
+                    if metrika not in ("prosperita", "bezpeci", "stabilita"):
+                        metrika = "stabilita"
+                    udalost["metrika"] = metrika
+                    udalost["nazev"] = f"Iniciativa: {FRAKCNI_CILE[frakce_id][0]}"
+                    npc = next(
+                        (
+                            postava for postava in self.postavy
+                            if postava.get("id") == npc_id
+                        ),
+                        None,
+                    )
+                    profil = FRAKCNI_PROFILY.get(frakce_id, {})
+                    starost = profil.get("starost", "Místní obyvatelé žádají o pomoc.")
+                    akce = npc.get("posledni_akce", "") if npc else ""
+                    akce_text = f" Její poslední krok: {akce}" if akce else ""
+                    udalost["text"] = (
+                        f"{npc['jmeno']} ({npc['role']}) žádá o pomoc. "
+                        f"{starost}{akce_text}"
+                        if npc else starost
+                    )
+                else:
+                    udalost["nazev"] = UDALOSTI_MESTA[udalost["typ"]]["nazev"]
+                    udalost["text"] = UDALOSTI_MESTA[udalost["typ"]]["text"]
                 udalost["lokace_id"] = _lokace_udalosti(
                     udalost["typ"], udalost["mesto_id"]
                 )
+                if udalost["typ"] == "frakcni_iniciativa":
+                    npc = next(
+                        (
+                            postava for postava in self.postavy
+                            if postava.get("id") == udalost["npc_id"]
+                        ),
+                        None,
+                    )
+                    if npc and _mesto_lokace(npc.get("lokace", "")) == udalost["mesto_id"]:
+                        udalost["lokace_id"] = npc["lokace"]
                 udalosti.append(udalost)
         self.udalosti_mesta = udalosti[-3:]
         ulozene_vztahy = (
@@ -616,7 +673,10 @@ class ZivySvetSystem:
             zpravy.append(zprava_sporu)
 
         if den % 4 == 0 and len(self.udalosti_mesta) < 3:
-            udalost = self._vytvor_udalost_mesta(den)
+            if den % 12 == 0:
+                udalost = self._vytvor_frakcni_iniciativu(den)
+            else:
+                udalost = self._vytvor_udalost_mesta(den)
             self.udalosti_mesta.append(udalost)
             zpravy.append(
                 f"{self.mesta[udalost['mesto_id']].nazev}: "
@@ -818,6 +878,62 @@ class ZivySvetSystem:
             "lokace_id": _lokace_udalosti(typ, mesto_id),
         }
 
+    def _vytvor_frakcni_iniciativu(self, den):
+        mesto_id = min(
+            self.mesta,
+            key=lambda ident: sum(
+                getattr(self.mesta[ident], metrika)
+                for metrika in ("prosperita", "bezpeci", "stabilita")
+            ),
+        )
+        mesto = self.mesta[mesto_id]
+        metrika = min(
+            ("prosperita", "bezpeci", "stabilita"),
+            key=lambda atribut: getattr(mesto, atribut),
+        )
+        frakce_v_meste = [
+            frakce_id for frakce_id, cil in self.frakcni_cile.items()
+            if cil.get("mesto_id") == mesto_id
+        ]
+        if not frakce_v_meste:
+            frakce_v_meste = list(FRAKCNI_CILE)
+        frakce_id = random.choice(frakce_v_meste)
+        zastupci = [
+            postava for postava in self.postavy
+            if postava.get("frakce") == frakce_id
+        ]
+        npc = (
+            random.choice(zastupci)
+            if zastupci
+            else random.choice(self.postavy)
+            if self.postavy
+            else {"id": "", "jmeno": "Místní obyvatelé", "role": "rada"}
+        )
+        profil = FRAKCNI_PROFILY.get(frakce_id, {})
+        starost = profil.get("starost", "Místní obyvatelé žádají o pomoc.")
+        akce = npc.get("posledni_akce", "")
+        akce_text = f" Její poslední krok: {akce}" if akce else ""
+        nazev = f"Iniciativa: {FRAKCNI_CILE[frakce_id][0]}"
+        return {
+            "id": f"{mesto_id}-iniciativa-{frakce_id}-{den}",
+            "den": den,
+            "mesto_id": mesto_id,
+            "typ": "frakcni_iniciativa",
+            "frakce_id": frakce_id,
+            "npc_id": npc.get("id", ""),
+            "metrika": metrika,
+            "nazev": nazev,
+            "text": (
+                f"{npc['jmeno']} ({npc['role']}) žádá o pomoc. "
+                f"{starost}{akce_text}"
+            ),
+            "lokace_id": (
+                npc["lokace"]
+                if _mesto_lokace(npc.get("lokace", "")) == mesto_id
+                else _lokace_udalosti("frakcni_iniciativa", mesto_id)
+            ),
+        }
+
     def _vyres_expirovane_udalosti(self, den, zpravy):
         cekajici = []
         for udalost in self.udalosti_mesta:
@@ -878,8 +994,34 @@ class ZivySvetSystem:
     def _vyres_udalost_mesta(self, hra, udalost):
         definice = UDALOSTI_MESTA[udalost["typ"]]
         mesto = self.mesta[udalost["mesto_id"]]
+        volby = definice["volby"]
+        zanik = definice["zanik"]
+        frakce_id = udalost.get("frakce_id", definice["frakce"])
+        if udalost["typ"] == "frakcni_iniciativa":
+            metrika = udalost["metrika"]
+            dopad_podpora = {metrika: 4, "stabilita": 2}
+            dopad_dohoda = {metrika: 2, "stabilita": 1}
+            if metrika == "stabilita":
+                dopad_podpora["stabilita"] = 6
+                dopad_dohoda["stabilita"] = 3
+            volby = (
+                (
+                    "Podpořit iniciativu (25 zl.)",
+                    25,
+                    dopad_podpora,
+                    5,
+                ),
+                (
+                    "Domluvit dobrovolné řešení",
+                    0,
+                    dopad_dohoda,
+                    2,
+                ),
+            )
+            zanik = {metrika: -2}
+            zanik["stabilita"] = zanik.get("stabilita", 0) - 1
         print(f"\n{mesto.nazev}: {udalost['nazev']}\n{udalost['text']}")
-        for index, (text, cena, _, _) in enumerate(definice["volby"], 1):
+        for index, (text, cena, _, _) in enumerate(volby, 1):
             oznaceni = " — nedostatek zlata" if hra.hrac.gold < cena else ""
             vytiskni_volbu(str(index), text + oznaceni)
         vytiskni_volbu("0", "Nechat situaci bez zásahu")
@@ -888,14 +1030,19 @@ class ZivySvetSystem:
         except EOFError:
             return False
         if volba == "0":
-            mesto.uprav(**definice["zanik"])
+            mesto.uprav(**zanik)
+            if udalost["typ"] == "frakcni_iniciativa":
+                frakce = hra.frakce.frakce.get(frakce_id)
+                if frakce:
+                    frakce.zmenit(-2)
+                self._uprav_vztah_npc(udalost.get("npc_id"), -1)
             tisk_info("Situaci ponecháváš bez zásahu; městské poměry se zhorší.")
             self._zapis_udalost(udalost, "bez zásahu")
             self._naplanuj_pokracovani(udalost, uspesne=False)
             return True
         try:
             index = int(volba) - 1
-            text, cena, dopady, vliv = definice["volby"][index]
+            text, cena, dopady, vliv = volby[index]
         except (ValueError, IndexError):
             tisk_chyba("Zadej číslo dostupné možnosti.")
             return False
@@ -904,17 +1051,29 @@ class ZivySvetSystem:
             return False
         hra.hrac.gold -= cena
         mesto.uprav(**dopady)
-        frakce_id = definice["frakce"]
         frakce = hra.frakce.frakce.get(frakce_id)
         if frakce:
             frakce.zmenit(vliv)
         self._uprav_vliv_lokace(
             udalost["lokace_id"], frakce_id, vliv
         )
+        if udalost["typ"] == "frakcni_iniciativa":
+            self._uprav_vztah_npc(udalost.get("npc_id"), 4)
         tisk_ok(f"Rozhodl ses: {text}.")
         self._zapis_udalost(udalost, text)
         self._naplanuj_pokracovani(udalost, uspesne=True)
         return True
+
+    def _uprav_vztah_npc(self, npc_id, zmena):
+        if not isinstance(npc_id, str):
+            return
+        npc = next(
+            (postava for postava in self.postavy if postava.get("id") == npc_id),
+            None,
+        )
+        if npc:
+            vztah = _signed_cislo(npc.get("vztah_hraci", 0))
+            npc["vztah_hraci"] = max(-100, min(100, vztah + zmena))
 
     def _naplanuj_pokracovani(self, udalost, uspesne):
         if udalost.get("retizec") or len(self.navazujici_udalosti) >= 5:

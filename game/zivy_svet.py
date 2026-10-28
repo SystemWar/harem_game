@@ -103,6 +103,65 @@ FRAKCNI_TRZNI_DOPADY = {
     "gembleri": {"zasoby": -1, "zelezo": 1},
 }
 
+NPC_POMOC = {
+    "mira_lecitelka": {
+        "zadost": "potřebuje zásoby pro ošetřovnu a bezpečnější cestu",
+        "cena": 10,
+        "mesto": {"bezpeci": 3, "stabilita": 1},
+    },
+    "radan_paserak": {
+        "zadost": "shání pomoc s dodávkou pro přístavní dělníky",
+        "cena": 10,
+        "mesto": {"prosperita": 2},
+        "trziste": {"zasoby": 1},
+    },
+    "elian_informator": {
+        "zadost": "ověřuje zprávu, která může uklidnit městskou radu",
+        "cena": 10,
+        "mesto": {"stabilita": 2},
+        "vyzkum": 1,
+    },
+    "selene_vedma": {
+        "zadost": "potřebuje pomoc s bezpečným průzkumem zvláštního úkazu",
+        "cena": 10,
+        "mesto": {"stabilita": 1},
+        "vyzkum": 2,
+    },
+    "talia_kupkyne": {
+        "zadost": "vyjednává o zásobách pro tržiště",
+        "cena": 10,
+        "mesto": {"prosperita": 3},
+        "trziste": {"zasoby": 2, "drevo": 1},
+    },
+    "vespera_kuryrka": {
+        "zadost": "hledá svědky pro klidné jednání s chrámem",
+        "cena": 10,
+        "mesto": {"stabilita": 2},
+        "inkvizice": -1,
+    },
+    "nela_umelkyne": {
+        "zadost": "připravuje bezpečné setkání pro místní umělce",
+        "cena": 10,
+        "mesto": {"prosperita": 2, "stabilita": 1},
+    },
+    "mira_vychodni": {
+        "zadost": "zajišťuje první pomoc pro říční osadu",
+        "cena": 10,
+        "mesto": {"bezpeci": 2, "stabilita": 1},
+    },
+    "rovan_kapitan": {
+        "zadost": "posiluje hlídku u východního mostu",
+        "cena": 10,
+        "mesto": {"bezpeci": 3},
+    },
+    "vesna_radni": {
+        "zadost": "vyjednává pravidelné zásoby pro Východní Brod",
+        "cena": 10,
+        "mesto": {"prosperita": 2, "stabilita": 1},
+        "trziste": {"zasoby": 1, "zelezo": 1},
+    },
+}
+
 FRAKCNI_RIVALOVE = (
     ("policie", "podsveti"),
     ("obchodnici", "syndikat_stinu"),
@@ -1508,8 +1567,17 @@ class ZivySvetSystem:
             f"{mesto.nazev}: prosperita {mesto.prosperita}, "
             f"bezpečí {mesto.bezpeci}, stabilita {mesto.stabilita}."
         )
+        pomoc = NPC_POMOC.get(postava.get("id"), {
+            "zadost": "potřebuje pomoc s místním úkolem",
+            "cena": 10,
+            "mesto": {"stabilita": 1},
+        })
+        print(f"Prosba: {pomoc['zadost']}.")
         vytiskni_volbu("1", "Poděkovat za zprávu a rozloučit se")
-        vytiskni_volbu("2", "Pomoci s místní záležitostí (10 zl., 1× denně)")
+        vytiskni_volbu(
+            "2",
+            f"Pomoci ( {pomoc['cena']} zl., 1× denně)",
+        )
         vytiskni_volbu("0", "Ukončit setkání")
         try:
             volba = input("> ").strip()
@@ -1528,14 +1596,29 @@ class ZivySvetSystem:
         if postava["posledni_pomoc_den"] == den:
             tisk_info("Dnes už jsi této postavě pomohl.")
             return
-        cena = 10
+        cena = pomoc["cena"]
         if hra.hrac.gold < cena:
             tisk_chyba(f"Na pomoc potřebuješ {cena} zlata.")
             return
         hra.hrac.gold -= cena
         postava["posledni_pomoc_den"] = den
         self._uprav_vztah_npc(postava.get("id"), 4)
-        mesto.uprav(stabilita=1)
+        mesto.uprav(**pomoc["mesto"])
+        zmeny_mesta = ", ".join(
+            f"{atribut} {hodnota:+d}"
+            for atribut, hodnota in pomoc["mesto"].items()
+        )
+        for zbozi_id, mnozstvi in pomoc.get("trziste", {}).items():
+            sklad = self.trziste_sklady.get(mesto.ident, {})
+            if zbozi_id in sklad:
+                sklad[zbozi_id] = max(0, min(60, sklad[zbozi_id] + mnozstvi))
+        if pomoc.get("vyzkum"):
+            hra.vyzkum.pridej_body(pomoc["vyzkum"])
+        if pomoc.get("inkvizice"):
+            hra.hrac.vliv_inkvizice = max(
+                0,
+                min(100, hra.hrac.vliv_inkvizice + pomoc["inkvizice"]),
+            )
         frakce = hra.frakce.frakce.get(frakce_id)
         if frakce:
             frakce.zmenit(2)
@@ -1550,10 +1633,14 @@ class ZivySvetSystem:
         self.historie = self.historie[-30:]
         from game.kronika import zaznamenej
         zaznamenej(hra, f"Živý svět: {zaznam['text']}")
-        tisk_ok(
-            f"Pomohl jsi {postava['jmeno']}; vztah +4, "
-            f"přízeň frakce +2 a stabilita města +1."
-        )
+        odmeny = [f"vztah +4", f"přízeň frakce +2", zmeny_mesta]
+        if pomoc.get("vyzkum"):
+            odmeny.append(f"výzkum +{pomoc['vyzkum']}")
+        if pomoc.get("inkvizice"):
+            odmeny.append(f"vliv inkvizice {pomoc['inkvizice']:+d}")
+        if pomoc.get("trziste"):
+            odmeny.append("doplnění místního trhu")
+        tisk_ok(f"Pomohl jsi {postava['jmeno']}; " + ", ".join(odmeny) + ".")
 
     def _menu_nabidky_svet(self, hra):
         print("\n=== PŘEHLED ZMĚN SVĚTA ===")

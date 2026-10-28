@@ -118,9 +118,11 @@ nejnaléhavější problém podle prosperity, bezpečí a stability.
 
 V nabídce živého světa lze také oslovit NPC, která se právě nacházejí ve stejné
 lokaci jako hráč. Postava sdílí svou poslední akci a starost frakce; hráč může
-jen vyslechnout zprávu, nebo jí jednou za den pomoci za 10 zlata. Pomoc zlepší
-vztah s postavou, přízeň její frakce a stabilitu města. Poloha, vztahy i den
-poslední pomoci se ukládají do hry.
+jen vyslechnout zprávu, nebo jednou za den pomoci s její konkrétní prosbou.
+Léčitelky zlepšují bezpečí, kupci podporují prosperitu a doplňují trh,
+informátoři přispívají ke stabilitě a výzkumu. Každá pomoc stojí 10 zlata
+a zlepšuje vztah s postavou i přízeň její frakce. Poloha, vztahy i den poslední
+pomoci se ukládají do hry.
 Při příchodu do lokace hra oznámí jména přítomných NPC a připomene možnost
 setkání v nabídce živého světa.
 

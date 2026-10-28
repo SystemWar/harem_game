@@ -71,6 +71,7 @@ class ZivySvetTesty(unittest.TestCase):
         zlato_pred = hra.hrac.gold
         reputace_pred = hra.frakce.frakce["policie"].reputace
         stabilita_pred = mesto.stabilita
+        bezpeci_pred = mesto.bezpeci
 
         with patch("builtins.input", side_effect=["1", "2"]), redirect_stdout(
             io.StringIO()
@@ -82,6 +83,7 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertEqual(mira["posledni_pomoc_den"], 3)
         self.assertEqual(hra.frakce.frakce["policie"].reputace, reputace_pred + 2)
         self.assertEqual(mesto.stabilita, stabilita_pred + 1)
+        self.assertEqual(mesto.bezpeci, bezpeci_pred + 3)
 
         ulozena = Hra.from_dict(hra.to_dict())
         ulozena_mira = next(
@@ -97,6 +99,45 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertIn("Dnes už jsi této postavě pomohl", vystup.getvalue())
         self.assertEqual(hra.hrac.gold, zlato_po_prvni_pomoci)
         self.assertEqual(mira["vztah_hraci"], 4)
+
+    def test_pomoc_npc_ma_dopad_podle_role_a_mistni_zadosti(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        hra.hrac.den = 4
+        talia = next(p for p in svet.postavy if p["id"] == "talia_kupkyne")
+        talia["lokace"] = hra.svet.aktualni_lokace
+        mesto = svet.mesta["stare_mesto"]
+        prosperita_pred = mesto.prosperita
+        zasoby_pred = svet.trziste_sklady["stare_mesto"]["zasoby"]
+        drevo_pred = svet.trziste_sklady["stare_mesto"]["drevo"]
+
+        with patch("builtins.input", side_effect=["1", "2"]), redirect_stdout(
+            io.StringIO()
+        ) as vystup:
+            svet._menu_setkani_npc(hra)
+
+        self.assertIn("vyjednává o zásobách pro tržiště", vystup.getvalue())
+        self.assertEqual(mesto.prosperita, prosperita_pred + 3)
+        self.assertEqual(
+            svet.trziste_sklady["stare_mesto"]["zasoby"],
+            zasoby_pred + 2,
+        )
+        self.assertEqual(
+            svet.trziste_sklady["stare_mesto"]["drevo"],
+            drevo_pred + 1,
+        )
+
+        hra.hrac.den = 5
+        elian = next(p for p in svet.postavy if p["id"] == "elian_informator")
+        elian["lokace"] = hra.svet.aktualni_lokace
+        body_pred = hra.vyzkum.body
+        stabilita_pred = mesto.stabilita
+        with patch("builtins.input", side_effect=["1", "2"]), redirect_stdout(
+            io.StringIO()
+        ):
+            svet._menu_setkani_npc(hra)
+        self.assertEqual(hra.vyzkum.body, body_pred + 1)
+        self.assertEqual(mesto.stabilita, stabilita_pred + 2)
 
     def test_trziste_ma_zasoby_v_obou_mestech_a_denne_se_doplni(self):
         svet = ZivySvetSystem()

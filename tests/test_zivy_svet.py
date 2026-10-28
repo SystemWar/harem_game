@@ -224,6 +224,28 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertIn("vychodni_pristav", LOKACE["pristav"]["sousedni"])
         self.assertIn("vychodni_pristav", hra.svet.odhalene_lokace)
 
+    def test_prichod_do_lokace_upozorni_na_pritomne_npc(self):
+        hra = Hra()
+        hra.zivy_svet.postavy[0]["lokace"] = "trh"
+        vystup = io.StringIO()
+
+        with patch("random.random", return_value=0.99), redirect_stdout(vystup):
+            self.assertTrue(hra.svet.cestuj("trh", hra))
+
+        self.assertIn("Na místě potkáváš: Mira", vystup.getvalue())
+        self.assertIn("Setkat se s NPC", vystup.getvalue())
+
+    def test_prichod_neupozorni_na_npc_v_jine_lokaci(self):
+        hra = Hra()
+        for postava in hra.zivy_svet.postavy:
+            postava["lokace"] = "hostinec"
+        vystup = io.StringIO()
+
+        with patch("random.random", return_value=0.99), redirect_stdout(vystup):
+            self.assertTrue(hra.svet.cestuj("trh", hra))
+
+        self.assertNotIn("Na místě potkáváš:", vystup.getvalue())
+
     def test_ai_najde_nejkratsi_cestu_k_cili_a_zvazuje_uzitek(self):
         graf = {
             "pevnost": ("trh", "les"),

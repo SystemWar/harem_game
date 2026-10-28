@@ -1472,6 +1472,18 @@ class SvetSystem:
         self.aktualni_lokace = cil
         self.navstiveno[cil] = self.navstiveno.get(cil, 0) + 1
         tisk_ok(f"Dorazil jsi do lokace: {LOKACE[cil]['nazev']}.")
+        zivy_svet = getattr(hra, "zivy_svet", None)
+        postavy = getattr(zivy_svet, "postavy", ())
+        pritomne = [
+            postava for postava in postavy
+            if isinstance(postava, dict) and postava.get("lokace") == cil
+        ]
+        if pritomne:
+            jmena = ", ".join(postava["jmeno"] for postava in pritomne)
+            tisk_info(
+                f"Na místě potkáváš: {jmena}. "
+                "Oslov je v nabídce Živý svět → Setkat se s NPC."
+            )
         return True
 
     def pouzij_nastroj(self, hra):

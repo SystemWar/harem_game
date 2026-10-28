@@ -121,6 +121,8 @@ lokaci jako hráč. Postava sdílí svou poslední akci a starost frakce; hráč
 jen vyslechnout zprávu, nebo jí jednou za den pomoci za 10 zlata. Pomoc zlepší
 vztah s postavou, přízeň její frakce a stabilitu města. Poloha, vztahy i den
 poslední pomoci se ukládají do hry.
+Při příchodu do lokace hra oznámí jména přítomných NPC a připomene možnost
+setkání v nabídce živého světa.
 
 ### Městská tržiště a ekonomika
 

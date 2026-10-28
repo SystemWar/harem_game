@@ -89,6 +89,20 @@ FRAKCNI_AKCE = {
     ),
 }
 
+FRAKCNI_TRZNI_DOPADY = {
+    "policie": {"zasoby": -1, "zelezo": -1},
+    "podsveti": {"zelezo": -1, "krystaly": 1},
+    "cirkev": {"zasoby": 1, "krystaly": -1},
+    "obchodnici": {"zasoby": 2, "drevo": 1, "zelezo": 1},
+    "kult_krve": {"krystaly": -2, "kamen": -1},
+    "syndikat_stinu": {"krystaly": -1, "zasoby": 1},
+    "cech_kurtizan": {"zasoby": -1, "drevo": 1},
+    "narkomani": {"zasoby": -1, "krystaly": 1},
+    "cyberpunkaci": {"zelezo": -2, "krystaly": 1},
+    "nymfomanky": {"zasoby": -1, "drevo": 1},
+    "gembleri": {"zasoby": -1, "zelezo": 1},
+}
+
 FRAKCNI_RIVALOVE = (
     ("policie", "podsveti"),
     ("obchodnici", "syndikat_stinu"),
@@ -333,6 +347,7 @@ class ZivySvetSystem:
             postava.setdefault("vztah_hraci", 0)
             postava.setdefault("posledni_rozhovor", "")
             postava.setdefault("posledni_akce", "")
+            postava.setdefault("posledni_pomoc_den", 0)
             if postava.get("lokace") not in LOKACE:
                 postava["lokace"] = "trh"
             if postava.get("frakce") not in FRAKCNI_CILE:
@@ -347,6 +362,9 @@ class ZivySvetSystem:
                 postava["posledni_rozhovor"] = ""
             if not isinstance(postava["posledni_akce"], str):
                 postava["posledni_akce"] = ""
+            postava["posledni_pomoc_den"] = _kladne_cislo(
+                postava["posledni_pomoc_den"]
+            )
         for definice in VYCHOZI_POSTAVY:
             if not any(p.get("id") == definice["id"] for p in self.postavy):
                 self.postavy.append(deepcopy(definice))
@@ -831,7 +849,31 @@ class ZivySvetSystem:
         cil = self.frakcni_cile[frakce_id]
         cil["mesto_id"] = mesto_id
         cil["posledni_akce"] = popis
-        return f"{mesto.nazev}: {FRAKCNI_CILE[frakce_id][0]} {popis}."
+        dopad_trhu = self._aplikuj_dopad_frakce_na_trh(frakce_id, mesto_id)
+        return (
+            f"{mesto.nazev}: {FRAKCNI_CILE[frakce_id][0]} {popis}"
+            f"{dopad_trhu}"
+        )
+
+    def _aplikuj_dopad_frakce_na_trh(self, frakce_id, mesto_id):
+        """Promítne každodenní práci frakce do lokálního trhu."""
+        dopady = FRAKCNI_TRZNI_DOPADY.get(frakce_id, {})
+        sklad = self.trziste_sklady.get(mesto_id)
+        if not isinstance(sklad, dict):
+            return ""
+        zmeny = []
+        for zbozi_id, zmena in dopady.items():
+            if zbozi_id not in sklad:
+                continue
+            pred = sklad[zbozi_id]
+            sklad[zbozi_id] = max(0, min(60, pred + zmena))
+            skutecna_zmena = sklad[zbozi_id] - pred
+            if skutecna_zmena:
+                smer = "+" if skutecna_zmena > 0 else "−"
+                zmeny.append(f"{smer}{abs(skutecna_zmena)} {zbozi_id}")
+        if not zmeny:
+            return ""
+        return " Tržiště: " + ", ".join(zmeny) + "."
 
     def _rozsir_vliv_fakce(self, frakce_id, den):
         lokace = tuple(
@@ -1392,6 +1434,11 @@ class ZivySvetSystem:
             vytiskni_volbu("3", "Vyjednávat mezi frakcemi")
             vytiskni_volbu("4", "Místní tržiště — koupit nebo prodat suroviny")
             vytiskni_volbu("5", "Kronika frakcí, jejich starosti a zboží")
+            pobliz = self._postavy_v_lokaci(hra)
+            vytiskni_volbu(
+                "6",
+                f"Setkat se s NPC v této lokaci ({len(pobliz)})",
+            )
             vytiskni_volbu("0", "Zpět")
             try:
                 volba = input("> ").strip()
@@ -1408,8 +1455,105 @@ class ZivySvetSystem:
                 elif volba == "5":
                     self._prehled_frakci_a_mest(hra)
                     input("Enter pro návrat...")
+                elif volba == "6":
+                    self._menu_setkani_npc(hra)
             except EOFError:
                 return
+
+    def _postavy_v_lokaci(self, hra):
+        lokace = getattr(getattr(hra, "svet", None), "aktualni_lokace", "")
+        return [
+            postava for postava in self.postavy
+            if postava.get("lokace") == lokace
+        ]
+
+    def _menu_setkani_npc(self, hra):
+        """Nabídne zprávu nebo jednorázovou denní pomoc přítomnému NPC."""
+        postavy = self._postavy_v_lokaci(hra)
+        if not postavy:
+            tisk_info("V této lokaci teď není žádná známá postava.")
+            return
+        print("\n=== SETKÁNÍ V LOKACI ===")
+        for index, postava in enumerate(postavy, 1):
+            print(
+                f"  {index}) {postava['jmeno']} — {postava['role']} "
+                f"(vztah {postava['vztah_hraci']:+d})"
+            )
+        try:
+            vyber = input("Postava (0 zpět): ").strip()
+            if vyber == "0":
+                return
+            index = int(vyber) - 1
+            if not 0 <= index < len(postavy):
+                raise ValueError
+        except (EOFError, ValueError):
+            tisk_chyba("Neplatný výběr postavy.")
+            return
+
+        postava = postavy[index]
+        frakce_id = postava.get("frakce")
+        profil = FRAKCNI_PROFILY.get(frakce_id, {})
+        mesto = self.mesta[_mesto_lokace(postava.get("lokace", ""))]
+        posledni_akce = postava.get("posledni_akce")
+        if not posledni_akce:
+            posledni_akce = (
+                postava["akce"][0]
+                if isinstance(postava.get("akce"), (tuple, list))
+                and postava["akce"]
+                else str(postava.get("akce", "Prochází městem."))
+            )
+        print(
+            f"\n{postava['jmeno']}: „{posledni_akce}“\n"
+            f"Starost frakce: {profil.get('starost', 'Místní dění se mění.')}\n"
+            f"{mesto.nazev}: prosperita {mesto.prosperita}, "
+            f"bezpečí {mesto.bezpeci}, stabilita {mesto.stabilita}."
+        )
+        vytiskni_volbu("1", "Poděkovat za zprávu a rozloučit se")
+        vytiskni_volbu("2", "Pomoci s místní záležitostí (10 zl., 1× denně)")
+        vytiskni_volbu("0", "Ukončit setkání")
+        try:
+            volba = input("> ").strip()
+        except EOFError:
+            return
+        if volba == "0":
+            return
+        if volba == "1":
+            tisk_info("Získal jsi aktuální zprávu z této čtvrti.")
+            return
+        if volba != "2":
+            tisk_chyba("Neplatná volba.")
+            return
+
+        den = max(1, int(hra.hrac.den))
+        if postava["posledni_pomoc_den"] == den:
+            tisk_info("Dnes už jsi této postavě pomohl.")
+            return
+        cena = 10
+        if hra.hrac.gold < cena:
+            tisk_chyba(f"Na pomoc potřebuješ {cena} zlata.")
+            return
+        hra.hrac.gold -= cena
+        postava["posledni_pomoc_den"] = den
+        self._uprav_vztah_npc(postava.get("id"), 4)
+        mesto.uprav(stabilita=1)
+        frakce = hra.frakce.frakce.get(frakce_id)
+        if frakce:
+            frakce.zmenit(2)
+        zaznam = {
+            "den": den,
+            "text": (
+                f"{postava['jmeno']}: místní pomoc v lokaci "
+                f"{postava['lokace'].replace('_', ' ')}."
+            ),
+        }
+        self.historie.append(zaznam)
+        self.historie = self.historie[-30:]
+        from game.kronika import zaznamenej
+        zaznamenej(hra, f"Živý svět: {zaznam['text']}")
+        tisk_ok(
+            f"Pomohl jsi {postava['jmeno']}; vztah +4, "
+            f"přízeň frakce +2 a stabilita města +1."
+        )
 
     def _menu_nabidky_svet(self, hra):
         print("\n=== PŘEHLED ZMĚN SVĚTA ===")

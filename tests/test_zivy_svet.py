@@ -43,6 +43,61 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertIn("Městská starost:", vystup.getvalue())
         self.assertEqual(hra.zivy_svet.postavy[6]["pribeh"], 1)
 
+    def test_setkani_npc_zobrazi_postavy_pouze_v_aktualni_lokaci(self):
+        hra = Hra()
+        sveta = hra.zivy_svet
+        hra.svet.aktualni_lokace = "hostinec"
+        mira = next(p for p in sveta.postavy if p["id"] == "mira_lecitelka")
+        mira["lokace"] = "hostinec"
+        videny = sveta._postavy_v_lokaci(hra)
+
+        self.assertEqual([p["id"] for p in videny], ["mira_lecitelka"])
+        with patch("builtins.input", side_effect=["1", "1"]), redirect_stdout(
+            io.StringIO()
+        ) as vystup:
+            sveta._menu_setkani_npc(hra)
+        self.assertIn("Mira", vystup.getvalue())
+        self.assertIn("aktuální zprávu", vystup.getvalue())
+        self.assertEqual(mira["vztah_hraci"], 0)
+
+    def test_pomoc_pritomnemu_npc_ma_denni_limit_a_uklada_se(self):
+        hra = Hra()
+        sveta = hra.zivy_svet
+        hra.hrac.den = 3
+        hra.svet.aktualni_lokace = "hostinec"
+        mira = next(p for p in sveta.postavy if p["id"] == "mira_lecitelka")
+        mira["lokace"] = "hostinec"
+        mesto = sveta.mesta["stare_mesto"]
+        zlato_pred = hra.hrac.gold
+        reputace_pred = hra.frakce.frakce["policie"].reputace
+        stabilita_pred = mesto.stabilita
+
+        with patch("builtins.input", side_effect=["1", "2"]), redirect_stdout(
+            io.StringIO()
+        ):
+            sveta._menu_setkani_npc(hra)
+
+        self.assertEqual(hra.hrac.gold, zlato_pred - 10)
+        self.assertEqual(mira["vztah_hraci"], 4)
+        self.assertEqual(mira["posledni_pomoc_den"], 3)
+        self.assertEqual(hra.frakce.frakce["policie"].reputace, reputace_pred + 2)
+        self.assertEqual(mesto.stabilita, stabilita_pred + 1)
+
+        ulozena = Hra.from_dict(hra.to_dict())
+        ulozena_mira = next(
+            p for p in ulozena.zivy_svet.postavy
+            if p["id"] == "mira_lecitelka"
+        )
+        self.assertEqual(ulozena_mira["posledni_pomoc_den"], 3)
+        zlato_po_prvni_pomoci = hra.hrac.gold
+        with patch("builtins.input", side_effect=["1", "2"]), redirect_stdout(
+            io.StringIO()
+        ) as vystup:
+            sveta._menu_setkani_npc(hra)
+        self.assertIn("Dnes už jsi této postavě pomohl", vystup.getvalue())
+        self.assertEqual(hra.hrac.gold, zlato_po_prvni_pomoci)
+        self.assertEqual(mira["vztah_hraci"], 4)
+
     def test_trziste_ma_zasoby_v_obou_mestech_a_denne_se_doplni(self):
         svet = ZivySvetSystem()
         stare_mesto_pred = svet.trziste_sklady["stare_mesto"]["zasoby"]
@@ -320,6 +375,44 @@ class ZivySvetTesty(unittest.TestCase):
 
         self.assertEqual(stare_mesto.prosperita, prosperita_pred + 1)
         self.assertEqual(stare_mesto.bezpeci, bezpeci_pred - 1)
+
+    def test_denni_cinnost_frakci_meni_zasoby_mistniho_trziste(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        frakce_id = "obchodnici"
+        sklady_pred = {
+            mesto_id: sklad.copy()
+            for mesto_id, sklad in svet.trziste_sklady.items()
+        }
+
+        zprava = svet._vykonej_cil_fakce(frakce_id)
+
+        mesto_id = svet.frakcni_cile[frakce_id]["mesto_id"]
+        sklad = svet.trziste_sklady[mesto_id]
+        self.assertEqual(
+            sklad["zasoby"],
+            min(60, sklady_pred[mesto_id]["zasoby"] + 2),
+        )
+        self.assertEqual(
+            sklad["drevo"],
+            min(60, sklady_pred[mesto_id]["drevo"] + 1),
+        )
+        self.assertIn("Tržiště:", zprava)
+        self.assertIn("zasoby", zprava)
+
+    def test_fakcni_trzni_dopady_respektuji_skladove_limity(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        mesto_id = svet.frakcni_cile["obchodnici"]["mesto_id"]
+        svet.trziste_sklady[mesto_id]["zasoby"] = 60
+        svet.trziste_sklady[mesto_id]["drevo"] = 0
+
+        zprava = svet._aplikuj_dopad_frakce_na_trh("obchodnici", mesto_id)
+
+        self.assertEqual(svet.trziste_sklady[mesto_id]["zasoby"], 60)
+        self.assertEqual(svet.trziste_sklady[mesto_id]["drevo"], 1)
+        self.assertNotIn("zasoby", zprava)
+        self.assertIn("+1 drevo", zprava)
 
     def test_automaticky_vyvoj_zustava_v_rozsahu_po_ctyriceti_dnech(self):
         hra = Hra()

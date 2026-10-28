@@ -116,13 +116,22 @@ reputaci, město, aktuální téma příběhu a zboží. Příběhové rozhovory
 konkrétní kapitolu příslušné frakce. Přehled obou měst navíc vypíše jejich
 nejnaléhavější problém podle prosperity, bezpečí a stability.
 
+V nabídce živého světa lze také oslovit NPC, která se právě nacházejí ve stejné
+lokaci jako hráč. Postava sdílí svou poslední akci a starost frakce; hráč může
+jen vyslechnout zprávu, nebo jí jednou za den pomoci za 10 zlata. Pomoc zlepší
+vztah s postavou, přízeň její frakce a stabilitu města. Poloha, vztahy i den
+poslední pomoci se ukládají do hry.
+
 ### Městská tržiště a ekonomika
 
 Staré město a Východní Brod mají oddělené, uložené zásoby potravin, dřeva,
 kamene, železa a krystalů. Na tržišti v živém světě lze suroviny nakupovat
 i prodávat; ceny se mění podle místní prosperity, stability a množství zboží.
-Sklady se každý den doplňují a jejich stav přetrvá načtení hry. Prodejní cena
-je nižší než nákupní, aby opakované obchodování nevytvářelo zisk bez rizika.
+Sklady se každý den doplňují a jejich stav přetrvá načtení hry. Denní činnosti
+frakcí navíc mění místní zásoby: hlídky či jiné skupiny spotřebovávají proviant
+a materiál, zatímco obchodníci doplňují zásoby. Tyto změny se promítají do
+množství zboží a dynamických cen. Prodejní cena je nižší než nákupní, aby
+opakované obchodování nevytvářelo zisk bez rizika.
 
 Denní příjem panství je umírněnější a závisí na zvolené daňové politice,
 hodnosti, trhu a hospodářském stavu Starého města. Kruté daně přinášejí více

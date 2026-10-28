@@ -144,6 +144,11 @@ Podpora zlepší odpovídající ukazatel města, reputaci frakce i vztah s posl
 ignorování naopak zhorší místní stav a vztah. Iniciativy a jejich průběh se
 ukládají společně se stavem živého světa.
 
+Městské události navíc reagují na krizi: pokud prosperita nebo bezpečí klesnou
+na 30 či méně, další situace se zaměří na karavanu či nedostatek zásob, případně
+na hlídky. Při nízké stabilitě vznikne iniciativa místní frakce a NPC; jinak
+zůstává běžný kalendářní cyklus událostí zachován.
+
 Karavany cestují po existujících hranách mapy. Jejich bezpečný příjezd může
 přinést hráči zlato, městu prosperitu a obchodníkům vliv; špatné podmínky
 zásilku odkloní. Přehled živého světa ukazuje současné karavany, vztahy

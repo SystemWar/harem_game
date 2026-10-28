@@ -332,6 +332,7 @@ class ZivySvetSystem:
             postava.setdefault("pribeh", 0)
             postava.setdefault("vztah_hraci", 0)
             postava.setdefault("posledni_rozhovor", "")
+            postava.setdefault("posledni_akce", "")
             if postava.get("lokace") not in LOKACE:
                 postava["lokace"] = "trh"
             if postava.get("frakce") not in FRAKCNI_CILE:
@@ -344,6 +345,8 @@ class ZivySvetSystem:
             )
             if not isinstance(postava["posledni_rozhovor"], str):
                 postava["posledni_rozhovor"] = ""
+            if not isinstance(postava["posledni_akce"], str):
+                postava["posledni_akce"] = ""
         for definice in VYCHOZI_POSTAVY:
             if not any(p.get("id") == definice["id"] for p in self.postavy):
                 self.postavy.append(deepcopy(definice))
@@ -447,10 +450,15 @@ class ZivySvetSystem:
                     starost = profil.get("starost", "Místní obyvatelé žádají o pomoc.")
                     akce = npc.get("posledni_akce", "") if npc else ""
                     akce_text = f" Její poslední krok: {akce}" if akce else ""
+                    ulozeny_text = udalost.get("text")
                     udalost["text"] = (
-                        f"{npc['jmeno']} ({npc['role']}) žádá o pomoc. "
-                        f"{starost}{akce_text}"
-                        if npc else starost
+                        ulozeny_text
+                        if isinstance(ulozeny_text, str) and ulozeny_text
+                        else (
+                            f"{npc['jmeno']} ({npc['role']}) žádá o pomoc. "
+                            f"{starost}{akce_text}"
+                            if npc else starost
+                        )
                     )
                 else:
                     udalost["nazev"] = UDALOSTI_MESTA[udalost["typ"]]["nazev"]
@@ -867,6 +875,33 @@ class ZivySvetSystem:
         mesta = tuple(MESTA)
         typ = typy[(den // 4 - 1) % len(typy)]
         mesto_id = mesta[(den // 4 - 1) % len(mesta)]
+        nejhorsi_mesto = min(
+            self.mesta,
+            key=lambda ident: min(
+                getattr(self.mesta[ident], metrika)
+                for metrika in ("prosperita", "bezpeci", "stabilita")
+            ),
+        )
+        nejhorsi = self.mesta[nejhorsi_mesto]
+        metrika = min(
+            ("prosperita", "bezpeci", "stabilita"),
+            key=lambda atribut: getattr(nejhorsi, atribut),
+        )
+        if getattr(nejhorsi, metrika) <= 30:
+            mesto_id = nejhorsi_mesto
+            if metrika == "bezpeci":
+                typ = "hlidky"
+            elif metrika == "stabilita":
+                return self._vytvor_frakcni_iniciativu(den, mesto_id)
+            else:
+                sklad = self.trziste_sklady.get(mesto_id, {})
+                typ = (
+                    "trzni_nepokoj"
+                    if any(sklad.get(zbozi, 0) <= 5 for zbozi in (
+                        "zasoby", "drevo", "kamen",
+                    ))
+                    else "karavana"
+                )
         definice = UDALOSTI_MESTA[typ]
         return {
             "id": f"{mesto_id}-{typ}-{den}",
@@ -878,14 +913,15 @@ class ZivySvetSystem:
             "lokace_id": _lokace_udalosti(typ, mesto_id),
         }
 
-    def _vytvor_frakcni_iniciativu(self, den):
-        mesto_id = min(
-            self.mesta,
-            key=lambda ident: sum(
-                getattr(self.mesta[ident], metrika)
-                for metrika in ("prosperita", "bezpeci", "stabilita")
-            ),
-        )
+    def _vytvor_frakcni_iniciativu(self, den, mesto_id=None):
+        if mesto_id not in self.mesta:
+            mesto_id = min(
+                self.mesta,
+                key=lambda ident: sum(
+                    getattr(self.mesta[ident], metrika)
+                    for metrika in ("prosperita", "bezpeci", "stabilita")
+                ),
+            )
         mesto = self.mesta[mesto_id]
         metrika = min(
             ("prosperita", "bezpeci", "stabilita"),

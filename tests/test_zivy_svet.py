@@ -419,6 +419,38 @@ class ZivySvetTesty(unittest.TestCase):
         self.assertEqual(ulozena["metrika"], "bezpeci")
         self.assertEqual(ulozena["text"], udalost["text"])
 
+    def test_mestske_udalosti_se_prizpusobi_nejvetsi_krizi(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        brod = svet.mesta["vychodni_brod"]
+        brod.prosperita = 50
+        brod.bezpeci = 50
+        brod.stabilita = 20
+
+        udalost = svet._vytvor_udalost_mesta(4)
+
+        self.assertEqual(udalost["mesto_id"], "vychodni_brod")
+        self.assertEqual(udalost["typ"], "frakcni_iniciativa")
+        self.assertEqual(udalost["metrika"], "stabilita")
+
+        brod.prosperita = 50
+        brod.bezpeci = 20
+        brod.stabilita = 50
+        udalost = svet._vytvor_udalost_mesta(8)
+        self.assertEqual(udalost["typ"], "hlidky")
+        self.assertEqual(udalost["mesto_id"], "vychodni_brod")
+
+        brod.bezpeci = 50
+        brod.prosperita = 20
+        svet.trziste_sklady["vychodni_brod"]["zasoby"] = 2
+        udalost = svet._vytvor_udalost_mesta(16)
+        self.assertEqual(udalost["typ"], "trzni_nepokoj")
+        self.assertEqual(udalost["mesto_id"], "vychodni_brod")
+
+        svet.trziste_sklady["vychodni_brod"]["zasoby"] = 20
+        udalost = svet._vytvor_udalost_mesta(16)
+        self.assertEqual(udalost["typ"], "karavana")
+
     def test_podpora_frakcni_iniciativy_zmeni_mesto_frakci_i_vztah_npc(self):
         hra = Hra()
         svet = hra.zivy_svet

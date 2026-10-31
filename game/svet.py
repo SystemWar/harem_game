@@ -32,6 +32,7 @@ BARVY_FRAKCI = {
     "cyberpunkaci": ORANGE,
     "nymfomanky": VIOLET,
     "gembleri": GOLD,
+    "systemaci": ORANGE,
 }
 
 LOKACE = {
@@ -343,7 +344,7 @@ LOKACE = {
         "popis": "Komíny dílen zakrývají pohyb zboží i lidí v jedné z nejrušnějších průmyslových čtvrtí.",
         "sousedni": [
             "pristav", "cervena_ctvrt", "cerna_ctvrt", "cechovni_ulicky",
-            "kovarensky_okrsek",
+            "kovarensky_okrsek", "tekno_party",
         ],
         "uroven": 2,
         "nebezpeci": "střední",
@@ -441,6 +442,16 @@ LOKACE = {
         "uroven": 1,
         "nebezpeci": "nízké",
     },
+    "tekno_party": {
+        "nazev": "Tekno Party — SoundSystem",
+        "kratky": "Tekno Party",
+        "ikona": "🎛️",
+        "typ_ctvrti": "zabavni",
+        "popis": "Podzemní hudební klub pulzuje basy, světly a pestrou směsí místních. Obchod se zde vede pouze s fikčními herními produkty.",
+        "sousedni": ["dymova_ctvrt", "cerna_ctvrt"],
+        "uroven": 2,
+        "nebezpeci": "střední",
+    },
 }
 
 LOKACE.update(LOKACE_VYCHODNIHO_BRODU)
@@ -513,7 +524,7 @@ NOVE_MESTSKE_LOKACE = (
     "dymova_ctvrt", "cechovni_ulicky", "pulnocni_trh",
     "stare_katakomby", "kovarensky_okrsek", "lucernova_ctvrt",
     "severni_hradby", "akademicke_namesti", "kanalove_pruplavy",
-    "botanicke_zahrady", "kupecke_ulice",
+    "botanicke_zahrady", "kupecke_ulice", "tekno_party",
 )
 
 AKCE_MESTSKYCH_CTVRTI = {
@@ -603,6 +614,12 @@ AKCE_MESTSKYCH_CTVRTI = {
         "frakce": "obchodnici",
         "odmena": "zelezo",
         "zdroj": {"id": "krystal_sily", "nazev": "Krystal síly", "mnozstvi": 2},
+    },
+    "tekno_party": {
+        "pruzkum": "Prohlédnout klubové nástěnky a hudební program",
+        "kontakt": "Domluvit bezpečný večer se SoundSystemem",
+        "frakce": "systemaci",
+        "odmena": "vyzkum",
     },
 }
 
@@ -848,7 +865,7 @@ NPC = {
     "nera_dymova": {
         "jmeno": "Nera, předákyně noční směny",
         "popis": "Zná každou dílnu Dýmové čtvrti a hledá dělníky, kteří se nevrátili domů.",
-        "lokace": "dymova_ctvrt",
+        "lokace":         "dymova_ctvrt", "tekno_party",
         "vek": 36,
         "dialogy": [
             "Když se komíny odmlčí, město poslouchá. Dnes v noci slyším něco, co se mi nelíbí.",
@@ -882,6 +899,34 @@ NPC = {
             "Východní Brod se může stát spojencem, ale nejdřív musí uvěřit, že o něj stojíme.",
         ],
     },
+    "dj_runa": {
+        "jmeno": "Runa, DJ SoundSystemu",
+        "popis": "Dospělá DJ, která organizuje bezpečné hudební večery a dává prostor místním umělcům.",
+        "lokace": "tekno_party",
+        "vek": 27,
+        "dialogy": [
+            "Basa spojí sál, ale pravidla bezpečí drží večer pohromadě.",
+            "Každý účastník si sám vybírá, kdy tančí a kdy odchází.",
+        ],
+    },
+    "ivo_systemak": {
+        "jmeno": "Ivo, zvukař Systemáků",
+        "popis": "Dospělý zvukař, který opravuje aparaturu a spolupracuje s dobrovolníky z Narkomanů.",
+        "lokace": "tekno_party",
+        "vek": 31,
+        "dialogy": [
+            "Hudba je lepší, když se o lidi stará někdo i mimo taneční parket.",
+        ],
+    },
+    "lexa_party": {
+        "jmeno": "Lexa, klubová organizátorka",
+        "popis": "Dospělá organizátorka, která propojuje umělce, pořadatele a bezpečný doprovod domů.",
+        "lokace": "tekno_party",
+        "vek": 25,
+        "dialogy": [
+            "Dobrý večer nekončí poslední skladbou, ale tím, že se všichni dostanou v pořádku domů.",
+        ],
+    },
 }
 
 
@@ -913,7 +958,7 @@ class DistrictSpecializationSystem:
         "vojenska": {
             "nazev": "Vojenská",
             "popis": "Výcvik a kontrola v ulicích zvyšují bezpečnost, disciplínu i sílu v boji.",
-            "bonus": {"vliv": 7, "loajalita": 6, "obrana": 3},
+            "bonus": {"vliv": 7, "loajalita": 6, "obrana": 3, "moral_armady": 4},
         },
         "luxusni": {
             "nazev": "Luxusní",
@@ -924,6 +969,21 @@ class DistrictSpecializationSystem:
             "nazev": "Náboženská",
             "popis": "Místo klidu a rituálů přináší větší lásku, oběť i posílení temné energie.",
             "bonus": {"dark_energy": 10, "loajalita": 7, "duvera": 5},
+        },
+        "zabavni": {
+            "nazev": "Zábavní",
+            "popis": "Hudební sály přitahují návštěvníky, podporují místní umělce a obnovují energii.",
+            "bonus": {"gold": 10, "sex_energy": 12, "duvera": 3},
+        },
+        "technicka": {
+            "nazev": "Technická",
+            "popis": "Dílny a komunikační uzly přinášejí výzkum a podporu armádní morálce.",
+            "bonus": {"gold": 4, "vyzkum": 2, "moral_armady": 2},
+        },
+        "zdravotni": {
+            "nazev": "Zdravotní",
+            "popis": "Ošetřovny a klidová místa zlepšují obnovu zdraví a důvěru obyvatel.",
+            "bonus": {"duvera": 4, "leceni": 10},
         },
     }
 
@@ -952,6 +1012,9 @@ class DistrictSpecializationSystem:
             "religiozni": "religiozni",
             "náboženská": "religiozni",
             "nabozenska": "religiozni",
+            "zabavni": "zabavni",
+            "technicka": "technicka",
+            "zdravotni": "zdravotni",
         }
         return mapa.get(text, text)
 
@@ -2306,6 +2369,7 @@ class SvetSystem:
             print("  1) 🏹 Velký lov zvěře v Mlžném lese (+zásoby jídla a kožešiny pro pevnost)")
             print("  2) 🪵 Kácení a těžba dřeva pro pevnost (+35 dřeva)")
             print("  3) 🍄 Sběr alchymistických bylin a hub")
+            print("  4) 🧭 Pátrání po lidech v nouzi a bezpečný doprovod")
         elif lok_id == "krvavy_lom":
             print("  1) 🪨 Velkoobchodní nákup stavebního kamene (40 🪙 -> +70 kamene)")
             print("  2) ⚒️ Nákup surové železné rudy pro kovárnu (35 🪙 -> +40 železa)")
@@ -2363,6 +2427,7 @@ class SvetSystem:
             print("  1) 🏴‍☠️ Noční námořní razie s kapitánkou Drake (+kořist zlata a surovin)")
             print("  2) 💃 Odkup exotické zajatkyně z pirátského podpalubí (100 🪙 -> nová dívka)")
             print("  3) 🪙 Prodej kradených šperků překupníkům (+50 🪙)")
+            print("  4) 🧭 Pátrání po lidech v nouzi a bezpečný doprovod")
         elif lok_id == "podzemni_arena":
             print("  1) ⚔️ Vstoupit do arény a bojovat o sázky (okamžitý gladiátorský souboj)")
             print("  2) 🎲 Sázka na divokého bojovníka arény (vklad 20 🪙 -> šance na 50 🪙)")
@@ -2388,6 +2453,11 @@ class SvetSystem:
         elif lok_id == "hostinec":
             print("  1) 🍻 Koupit rundu pro celý sál (25 🪙 -> +6 reputace města)")
             print("  2) 🎲 Hazardní hra v kostky se štamgasty")
+        elif lok_id == "tekno_party":
+            print("  1) 🎛️ Poslechnout SoundSystem a podpořit místní hudebníky")
+            print("  2) 🧺 Otevřít komunitní trh s fikčními herními produkty")
+            print("  3) 🤝 Podpořit bezpečný návrat návštěvníků")
+            print("  4) 🧭 Pátrání po lidech v nouzi a bezpečný doprovod")
         elif lok_id in AKCE_MESTSKYCH_CTVRTI:
             akce_ctvrti = AKCE_MESTSKYCH_CTVRTI[lok_id]
             den = getattr(hra.hrac, "den", 0)
@@ -2404,6 +2474,7 @@ class SvetSystem:
                 f"{stav_kontaktu}"
             )
             print("  3) 🗺️ Zmapovat sousední tajnou stezku")
+            print("  5) 🧭 Pátrání po lidech v nouzi a bezpečný doprovod")
             zdroj = akce_ctvrti.get("zdroj")
             if zdroj:
                 zdroj_hotov = not self.lokacni_odmena_dostupna(
@@ -2481,6 +2552,9 @@ class SvetSystem:
                 if hasattr(hra, "alchymie"):
                     hra.alchymie.pridat_surovinu("bylina_mesicni", 1)
                 tisk_ok("Nalezena byla bylina měsíčnice pro alchymii!")
+            elif volba == "4":
+                from game.lov import menu_zachranneho_patrani
+                menu_zachranneho_patrani(hra, lok_id)
 
         elif lok_id == "hranice":
             if volba == "1":
@@ -2772,6 +2846,9 @@ class SvetSystem:
             elif volba == "3":
                 hra.hrac.gold += 50
                 tisk_ok("Prodal jsi pašované šperky místním pirátům (+50 🪙)!")
+            elif volba == "4":
+                from game.lov import menu_zachranneho_patrani
+                menu_zachranneho_patrani(hra, lok_id)
 
         elif lok_id == "zricenina_astralni_veze":
             if volba == "1":
@@ -2899,6 +2976,38 @@ class SvetSystem:
                 else:
                     tisk_chyba("Nedostatek zlata.")
 
+        elif lok_id == "tekno_party":
+            if volba == "1":
+                pred = hra.hrac.sex_energy
+                hra.hrac.pridej_sex_energy(10)
+                hra.hrac.reputace_mesta = min(100, hra.hrac.reputace_mesta + 1)
+                for frakce_id in ("systemaci", "narkomani"):
+                    frakce = hra.frakce.frakce.get(frakce_id)
+                    if frakce:
+                        frakce.zmenit(2)
+                tisk_ok(
+                    f"SoundSystem rozproudil večer: energie +"
+                    f"{hra.hrac.sex_energy - pred}, reputace města +1."
+                )
+            elif volba == "2":
+                from game.drogovy_provoz import menu_tekno_party
+                menu_tekno_party(hra)
+            elif volba == "3":
+                hra.zivy_svet.mesta["stare_mesto"].uprav(
+                    bezpeci=2, stabilita=1
+                )
+                for frakce_id in ("systemaci", "narkomani"):
+                    frakce = hra.frakce.frakce.get(frakce_id)
+                    if frakce:
+                        frakce.zmenit(3)
+                tisk_ok(
+                    "Dobrovolný doprovod posílil bezpečí akce "
+                    "i spolupráci Systemáků s Narkomany."
+                )
+            elif volba == "4":
+                from game.lov import menu_zachranneho_patrani
+                menu_zachranneho_patrani(hra, lok_id)
+
         elif lok_id == "cervena_ctvrt":
             if volba == "1":
                 from game.nevestinec import menu_nevestinec
@@ -3001,6 +3110,9 @@ class SvetSystem:
                         f"Místní zdroj {zdroj['id']} není dostupný "
                         "v seznamu alchymistických surovin."
                     )
+            elif volba == "5":
+                from game.lov import menu_zachranneho_patrani
+                menu_zachranneho_patrani(hra, lok_id)
 
         else:
             # Obecná akce pro ostatní lokace

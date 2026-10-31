@@ -29,6 +29,7 @@ FRAKCNI_CILE = {
     "cyberpunkaci": ("Ovládnout městskou datovou síť", "Technici opravují uzly a obchodují s ověřenými informacemi."),
     "nymfomanky": ("Uspořádat dobrovolný slavnostní večer", "Organizátorky připravují společenskou akci s jasnými pravidly účasti."),
     "gembleri": ("Rozšířit vliv heren", "Gamblerů lákají další návštěvníky ke stolům a zároveň řeší rostoucí dluhy svých členů."),
+    "systemaci": ("Udržet SoundSystem bezpečný a přístupný", "Zvukaři a pořadatelé opravují aparaturu a spolupracují s dobrovolníky."),
 }
 
 FRAKCNI_AKCE = {
@@ -87,6 +88,11 @@ FRAKCNI_AKCE = {
         "prosperita",
         {"prosperita": 1, "stabilita": -1},
     ),
+    "systemaci": (
+        "uspořádali bezpečný SoundSystem večer",
+        "stabilita",
+        {"stabilita": 1, "prosperita": 1},
+    ),
 }
 
 FRAKCNI_TRZNI_DOPADY = {
@@ -101,6 +107,7 @@ FRAKCNI_TRZNI_DOPADY = {
     "cyberpunkaci": {"zelezo": -2, "krystaly": 1},
     "nymfomanky": {"zasoby": -1, "drevo": 1},
     "gembleri": {"zasoby": -1, "zelezo": 1},
+    "systemaci": {"krystaly": -1, "zasoby": 1},
 }
 
 NPC_POMOC = {
@@ -169,7 +176,10 @@ FRAKCNI_RIVALOVE = (
     ("cech_kurtizan", "nymfomanky"),
     ("narkomani", "cyberpunkaci"),
     ("gembleri", "policie"),
+    ("systemaci", "narkomani"),
 )
+
+FRAKCNI_SPOJENCI = {frozenset(("systemaci", "narkomani"))}
 
 TRASA_KARAVANY = (
     "trh",
@@ -267,6 +277,31 @@ VYCHOZI_POSTAVY = (
         "akce": (
             "Zprostředkovala jednání mezi radou a cechy.",
             "Vyjednala zásoby pro čtvrti za řekou.",
+        ),
+    },
+    {
+        "id": "dj_runa", "jmeno": "Runa", "role": "DJ SoundSystemu",
+        "frakce": "systemaci", "lokace": "tekno_party", "duvera": 0,
+        "akce": (
+            "Zkouší aparaturu před večerním programem.",
+            "Domlouvá vystoupení místních hudebníků.",
+            "Připravila klidné místo pro návštěvníky, kteří potřebují pauzu.",
+        ),
+    },
+    {
+        "id": "ivo_systemak", "jmeno": "Ivo", "role": "Zvukař Systemáků",
+        "frakce": "systemaci", "lokace": "tekno_party", "duvera": 0,
+        "akce": (
+            "Opravuje světelný uzel SoundSystemu.",
+            "Koordinuje dobrovolný doprovod s místními pomocníky.",
+        ),
+    },
+    {
+        "id": "lexa_party", "jmeno": "Lexa", "role": "Klubová organizátorka",
+        "frakce": "systemaci", "lokace": "tekno_party", "duvera": 0,
+        "akce": (
+            "Zajišťuje bezpečné zázemí pro účastníky večera.",
+            "Spojuje umělce s komunitními dobrovolníky.",
         ),
     },
 )
@@ -561,7 +596,15 @@ class ZivySvetSystem:
         self.vztahy_frakci = {
             _klic_vztahu(*dvojice): max(
                 -100,
-                min(100, _signed_cislo(ulozene_vztahy.get(_klic_vztahu(*dvojice), -20))),
+                min(
+                    100,
+                    _signed_cislo(
+                        ulozene_vztahy.get(
+                            _klic_vztahu(*dvojice),
+                            40 if frozenset(dvojice) in FRAKCNI_SPOJENCI else -20,
+                        )
+                    ),
+                ),
             )
             for dvojice in FRAKCNI_RIVALOVE
         }

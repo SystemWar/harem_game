@@ -100,6 +100,15 @@ FRAKCNI_PROFILY = {
             ("Pokladna pomoci", "Gamblerů rozhodují, zda část výtěžku půjde na podporu zadlužených."),
         ),
     },
+    "systemaci": {
+        "starost": "SoundSystem potřebuje opravit aparaturu a zajistit bezpečný návrat návštěvníků.",
+        "zbozi": ("náhradní součástky", "světelné krystaly", "nealkoholické nápoje"),
+        "kapitoly": (
+            ("Ztracený kabel", "Zvukař hledá součástku pro opravu aparatury před dalším večerem."),
+            ("Bezpečný návrat", "Pořadatelé plánují doprovodné trasy ve spolupráci s místními dobrovolníky."),
+            ("Zvuk pro celé město", "Systemáci rozhodují, zda otevřou svůj SoundSystem i veřejným slavnostem."),
+        ),
+    },
 }
 
 MESTSKE_STAROSTI = {

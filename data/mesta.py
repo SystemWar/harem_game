@@ -8,7 +8,7 @@ MESTA = {
             "pevnost", "trh", "pristav", "hostinec", "akademie",
             "cervena_ctvrt", "palac_bohatych", "cechovni_ulicky",
             "pulnocni_trh", "ricni_nabrezi", "univerzitni_okrsek",
-            "akademicke_namesti",
+            "akademicke_namesti", "tekno_party",
         ),
         "prosperita": 58,
         "bezpeci": 62,
@@ -58,6 +58,7 @@ FRAKCNI_ZONY = {
     ),
     "nymfomanky": ("botanicke_zahrady",),
     "gembleri": ("cervena_ctvrt", "pulnocni_trh", "podzemni_arena"),
+    "systemaci": ("tekno_party", "dymova_ctvrt", "akademie"),
 }
 
 LOKACE_VYCHODNIHO_BRODU = {

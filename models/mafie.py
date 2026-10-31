@@ -95,7 +95,10 @@ class Mafie:
         m.informatori = data.get("informatori", 0)
         m.korupce = data.get("korupce", 0)
         m.vliv_ve_meste = data.get("vliv_ve_meste", 0)
-        rozkazy = {"hlidkovat", "vycvik", "patrolovat", "tažení"}
+        rozkazy = {
+            "hlidkovat", "vycvik", "patrolovat", "tažení",
+            "ochrana_karavany", "podpora_mesta",
+        }
         rozkaz = data.get("rozkaz_armady", "hlidkovat")
         m.rozkaz_armady = rozkaz if rozkaz in rozkazy else "hlidkovat"
         try:

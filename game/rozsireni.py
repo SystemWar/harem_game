@@ -483,6 +483,8 @@ class MestskeFrakceSystem:
         "cech_kurtizan": 18,
         "cechy": 10,
         "elitni_rod": 8,
+        "systemaci": 40,
+        "narkomani": 40,
     }
 
     def __post_init__(self):
@@ -953,6 +955,24 @@ class MestskyMesicSystem:
         self.prehled = prehled
         if zisk > 0:
             hra.hrac.gold += zisk
+        if bonusy.get("sex_energy"):
+            hra.hrac.pridej_sex_energy(int(bonusy["sex_energy"]))
+        if bonusy.get("dark_energy"):
+            hra.hrac.pridej_dark_energy(int(bonusy["dark_energy"]))
+        if bonusy.get("vyzkum"):
+            hra.vyzkum.pridej_body(int(bonusy["vyzkum"]))
+        if bonusy.get("moral_armady") and getattr(hra, "mafie", None):
+            hra.mafie.moral_armady = min(
+                100, hra.mafie.moral_armady + int(bonusy["moral_armady"])
+            )
+        if bonusy.get("leceni"):
+            hra.hrac.hp = min(
+                hra.hrac.max_hp, hra.hrac.hp + int(bonusy["leceni"])
+            )
+        if bonusy.get("obrana"):
+            hra.hrac.skilly["obrana"] = (
+                hra.hrac.skilly.get("obrana", 0) + int(bonusy["obrana"])
+            )
         if getattr(hra, "harem", None) is not None:
             for otrok in hra.harem.vsechny_aktivni():
                 if bonusy.get("duvera"):
@@ -1007,23 +1027,19 @@ def menu_specializace_ctvrti(hra):
     lokace_id = getattr(getattr(hra, "svet", None), "aktualni_lokace", "pevnost")
     print("🏭 Specializace čtvrtí")
     print(f"Současná lokace: {LOKACE.get(lokace_id, {}).get('nazev', lokace_id)}")
-    print("Vyber typ: ")
-    print("1) Obecná čtvrť")
-    print("2) Zahradní specializace")
-    print("3) Vodní specializace")
-    print("4) Kupecká specializace")
+    print("Vyber typ:")
+    typy = tuple(hra.svet.specializace_ctvrti.TYPY)
+    for index, typ_id in enumerate(typy, 1):
+        popis = hra.svet.specializace_ctvrti.popis_typu(typ_id)
+        print(f"{index}) {popis['nazev']} — {popis['popis']}")
     print("0) Zpět")
     volba = input("> ").strip()
     if volba == "0":
         return
-    mapa = {
-        "1": "obecna",
-        "2": "zahradni",
-        "3": "vodni",
-        "4": "kupecká",
-    }
-    typ = mapa.get(volba)
-    if typ is None:
+    try:
+        typ_index = int(volba) - 1
+        typ = typy[typ_index]
+    except (ValueError, IndexError):
         tisk_chyba("Neplatná volba.")
         input("Enter...")
         return

@@ -28,6 +28,18 @@ SPECIALIZACE = {
         "nazev": "Válečný velitel", "cena": 250, "plat": 8,
         "ukol": "Cvičí armádu a zvyšuje její morálku.",
     },
+    "diplomat": {
+        "nazev": "Diplomat", "cena": 180, "plat": 6,
+        "ukol": "Urovnává spory a posiluje stabilitu cílového města.",
+    },
+    "logistik": {
+        "nazev": "Logistik", "cena": 150, "plat": 5,
+        "ukol": "Doplňuje zásoby pevnosti a zajišťuje pravidelné dodávky.",
+    },
+    "inzenyr": {
+        "nazev": "Inženýr", "cena": 210, "plat": 7,
+        "ukol": "Podporuje výzkum a připravuje armádu na další výcvik.",
+    },
 }
 
 JMENA_PERSONALU = {
@@ -36,12 +48,17 @@ JMENA_PERSONALU = {
     "spravce": ("Ota", "Milena", "Bohdan"),
     "lekar": ("Mira", "Viktor", "Sára"),
     "velitel": ("Varek", "Tereza", "Dobromil"),
+    "diplomat": ("Ema", "Viktor", "Anežka"),
+    "logistik": ("Ota", "Kamil", "Božena"),
+    "inzenyr": ("Radim", "Sára", "Marek"),
 }
 
 ROZKAZY_ARMADY = {
     "hlidkovat": "Hlídky — zvyšují městskou reputaci a klid",
     "vycvik": "Výcvik — připravuje oddíly a zvyšuje bojovou morálku",
     "patrolovat": "Patrola — posiluje kontrolu nejslabšího území",
+    "ochrana_karavany": "Doprovod — chrání obchodní trasy a zvyšuje bezpečí",
+    "podpora_mesta": "Podpora města — pomáhá stabilitě a drží morálku oddílů",
     "tažení": "Tažení — riskantní výprava za kořistí",
 }
 
@@ -113,6 +130,7 @@ def menu_personalu(hra):
             f"Rozšířit kapacitu o jedno místo ({150 + hra.hrac.max_agentu * 100} zl.)",
         )
         vytiskni_volbu("4", "Nastavit rozkazy armády")
+        vytiskni_volbu("5", "Nábor vojáků, kapitánů a správa žoldu")
         vytiskni_volbu("0", "Zpět")
         try:
             volba = input("> ").strip()
@@ -152,6 +170,77 @@ def menu_personalu(hra):
                 tisk_ok(f"Personál má nyní kapacitu {hra.hrac.max_agentu}.")
         elif volba == "4":
             nastav_rozkaz_armady(hra)
+        elif volba == "5":
+            menu_armady(hra)
+
+
+def najmi_vojaka(hra):
+    cena = 25
+    if hra.hrac.gold < cena:
+        tisk_chyba(f"Nábor vojáka stojí {cena} zlata.")
+        return False
+    hra.hrac.gold -= cena
+    hra.mafie.vojaci += 1
+    tisk_ok(f"Naverbován voják. Celkový počet: {hra.mafie.vojaci}.")
+    return True
+
+
+def najmi_kapitana(hra):
+    cena = 120
+    if hra.hrac.gold < cena:
+        tisk_chyba(f"Nábor kapitána stojí {cena} zlata.")
+        return False
+    hra.hrac.gold -= cena
+    hra.mafie.kapitanove += 1
+    tisk_ok(f"Naverbován kapitán. Celkový počet: {hra.mafie.kapitanove}.")
+    return True
+
+
+def menu_armady(hra):
+    while True:
+        clear()
+        mafie = hra.mafie
+        print("=== ARMÁDA DOMINIA ===")
+        print(
+            f"Vojáci: {mafie.vojaci} | Kapitáni: {mafie.kapitanove} | "
+            f"Morálka: {mafie.moral_armady}/100 | Síla: {mafie.bojova_sila()}"
+        )
+        print(
+            "Žold: "
+            + ("placený, voják 1 zl./den, kapitán 4 zl./den"
+               if mafie.placena_armada else "neplacený")
+        )
+        vytiskni_volbu("1", "Naverbovat vojáka (25 zl.)")
+        vytiskni_volbu("2", "Naverbovat kapitána (120 zl.)")
+        vytiskni_volbu(
+            "3",
+            "Vypnout denní žold" if mafie.placena_armada
+            else "Zapnout denní žold",
+        )
+        vytiskni_volbu("0", "Zpět")
+        try:
+            volba = input("> ").strip()
+        except EOFError:
+            return
+        if volba == "0":
+            return
+        if volba == "1":
+            najmi_vojaka(hra)
+        elif volba == "2":
+            najmi_kapitana(hra)
+        elif volba == "3":
+            mafie.placena_armada = not mafie.placena_armada
+            tisk_ok(
+                "Denní žold armády "
+                + ("je nyní zapnutý." if mafie.placena_armada else "byl vypnut.")
+            )
+        else:
+            tisk_chyba("Neplatná volba.")
+            continue
+        try:
+            input("Enter...")
+        except EOFError:
+            return
 
 
 def _predelej_misi(hra):
@@ -305,6 +394,28 @@ def zpracuj_denni_personal(hra):
                 f"{agent.jmeno} vedl výcvik v oblasti {mesto.nazev}; "
                 f"morálka armády +{hra.mafie.moral_armady - pred}, bezpečí +2."
             )
+        elif agent.ukol == "diplomat":
+            mesto = _stav_mesta(hra, agent)
+            mesto.uprav(stabilita=2)
+            hra.hrac.reputace_mesta = min(100, hra.hrac.reputace_mesta + 1)
+            zpravy.append(
+                f"{agent.jmeno} zprostředkoval jednání v {mesto.nazev}; "
+                "stabilita +2, reputace +1."
+            )
+        elif agent.ukol == "logistik":
+            zasoby = min(8, max(0, 100 - hra.pevnost.zasoby))
+            hra.pevnost.zasoby += zasoby
+            zpravy.append(
+                f"{agent.jmeno} doplnil zásoby pevnosti o {zasoby}."
+            )
+        elif agent.ukol == "inzenyr":
+            hra.vyzkum.pridej_body(1)
+            pred = hra.mafie.moral_armady
+            hra.mafie.moral_armady = min(100, pred + 2)
+            zpravy.append(
+                f"{agent.jmeno} připravil technický výcvik; "
+                f"výzkum +1, morálka armády +{hra.mafie.moral_armady - pred}."
+            )
         styl = STYLY_MISE.get(
             getattr(agent, "styl_mise", "vyvazene"),
             STYLY_MISE["vyvazene"],
@@ -434,6 +545,28 @@ def _zpracuj_armadni_rozkaz(hra):
             tisk_ok(f"Armádní hlídka posílila kontrolu v {cil.nazev} na {cil.kontrola} %.")
         else:
             tisk_info("Hlídky prošly městskými ulicemi; nemáš žádné území k zabezpečení.")
+    elif rozkaz == "ochrana_karavany":
+        mesto = min(
+            hra.zivy_svet.mesta.values(),
+            key=lambda stav: (stav.bezpeci, stav.stabilita),
+        )
+        mesto.uprav(bezpeci=2, stabilita=1)
+        tisk_ok(
+            f"Armádní doprovod ochránil obchodní trasu u města {mesto.nazev}; "
+            "bezpečí +2, stabilita +1."
+        )
+    elif rozkaz == "podpora_mesta":
+        mesto = min(
+            hra.zivy_svet.mesta.values(),
+            key=lambda stav: (stav.stabilita, stav.bezpeci),
+        )
+        mesto.uprav(stabilita=2)
+        pred = mafie.moral_armady
+        mafie.moral_armady = min(100, pred + 2)
+        tisk_ok(
+            f"Armáda pomohla městu {mesto.nazev}; stabilita +2, "
+            f"morálka +{mafie.moral_armady - pred}."
+        )
     elif rozkaz == "tažení":
         sila = mafie.bojova_sila()
         if sila >= 12:

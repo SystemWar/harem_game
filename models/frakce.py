@@ -39,6 +39,11 @@ class FrakcniSystem:
             "Spolek lidí závislých na hazardu, který šíří vliv heren a bojuje s dluhy.",
             0,
         ),
+        "systemaci": Frakce(
+            "Systemáci",
+            "Hudební a technická komunita kolem SoundSystemů, která spolupracuje s Narkomany na bezpečných akcích a podpoře lidí.",
+            0,
+        ),
     })
 
     def to_dict(self):

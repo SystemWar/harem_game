@@ -166,6 +166,104 @@ def prodej_zasob(hra, id_polozky, mnozstvi=1):
     return vynos
 
 
+def nakup_zasob(hra, id_polozky, mnozstvi=1):
+    """Nakoupí fikční skladové položky za cenu vyšší než jejich výkupní cenu."""
+    if id_polozky not in PRODEJNI_CENA:
+        tisk_chyba("Neznámá položka.")
+        return False
+    try:
+        mnozstvi = int(mnozstvi)
+    except (TypeError, ValueError):
+        tisk_chyba("Zadej platný počet kusů.")
+        return False
+    if mnozstvi <= 0:
+        tisk_chyba("Počet kusů musí být kladný.")
+        return False
+
+    cena_za_kus = max(
+        PRODEJNI_CENA[id_polozky] + 1,
+        int(PRODEJNI_CENA[id_polozky] * 1.35),
+    )
+    cena = cena_za_kus * mnozstvi
+    if hra.hrac.gold < cena:
+        tisk_chyba(f"Nákup stojí {cena} zlata.")
+        return False
+
+    stav = _provoz(hra)
+    hra.hrac.gold -= cena
+    stav["sklad"][id_polozky] += mnozstvi
+    tisk_ok(f"Nakoupeno {mnozstvi} kusů za {cena} zlata.")
+    return cena
+
+
+def menu_tekno_party(hra):
+    """Obchod s abstraktními fikčními položkami v klubu."""
+    while True:
+        clear()
+        stav = _provoz(hra)
+        print("--- Tekno Party: komunitní trh ---")
+        print("Nabídka obsahuje pouze fikční herní produkty.")
+        print("1) Prodat skladové zásoby")
+        print("2) Nakoupit zásoby")
+        print("0) Zpět")
+        try:
+            volba = input("> ").strip()
+        except EOFError:
+            return
+        if volba == "0":
+            return
+
+        polozky = [
+            ("konopny_kvet", "Konopný květ"),
+            *((id_drogy, info["nazev"]) for id_drogy, info in DROGY.items()),
+        ]
+        if volba == "1":
+            dostupne = [
+                (ident, nazev) for ident, nazev in polozky
+                if stav["sklad"].get(ident, 0) > 0
+            ]
+            if not dostupne:
+                tisk_info("Ve skladu zatím nemáš nic k prodeji.")
+            else:
+                for index, (ident, nazev) in enumerate(dostupne, 1):
+                    print(
+                        f"{index}) {nazev}: {stav['sklad'][ident]} ks "
+                        f"({PRODEJNI_CENA[ident]} zl./ks)"
+                    )
+                try:
+                    vyber = input("Položka (0 zpět): ").strip()
+                    if vyber == "0":
+                        continue
+                    index = int(vyber) - 1
+                    ident, _ = dostupne[index]
+                    mnozstvi = input("Počet kusů: ").strip()
+                except (EOFError, ValueError, IndexError):
+                    tisk_chyba("Neplatná volba položky.")
+                    continue
+                prodej_zasob(hra, ident, mnozstvi)
+        elif volba == "2":
+            for index, (ident, nazev) in enumerate(polozky, 1):
+                cena = max(PRODEJNI_CENA[ident] + 1, int(PRODEJNI_CENA[ident] * 1.35))
+                print(f"{index}) {nazev} — {cena} zl./ks")
+            try:
+                vyber = input("Položka (0 zpět): ").strip()
+                if vyber == "0":
+                    continue
+                ident, _ = polozky[int(vyber) - 1]
+                mnozstvi = input("Počet kusů: ").strip()
+            except (EOFError, ValueError, IndexError):
+                tisk_chyba("Neplatná volba položky.")
+                continue
+            nakup_zasob(hra, ident, mnozstvi)
+        else:
+            tisk_chyba("Neplatná volba.")
+            continue
+        try:
+            input("Enter...")
+        except EOFError:
+            return
+
+
 def menu_drogoveho_provozu(hra):
     while True:
         clear()

@@ -481,6 +481,7 @@ POVESTI_LOKACI = {
     "sklenena_zahrada": "Mezi orchidejemi roste jediná stříbrná květina. Zahradníci ji nikdy netrhají a pečlivě zaznamenávají, kdo se na ni ptá.",
     "observator": "Jedna čočka věže míří mimo známá souhvězdí. Cassian ji ponechal tak schválně, aby sledovala pohyb astrální brány.",
     "molo_mesicniho_pristavu": "Na kůlech mola jsou značky výšky přílivu a vedle nich drobné vzkazy pro posádky, které vyplouvají beze jména.",
+    "tekno_party": "Zvukaři tvrdí, že starý SoundSystem umí zesílit i šeptané přání; pořadatelé proto po každé party zapisují, kdo pomohl bezpečně doprovodit návštěvníky domů.",
     "katakomby": "Na některých náhrobcích jsou vytesány dvě data narození. Mortis říká, že druhé patří tomu, kdo se vrátil z podzemí.",
     "svatyne_krvaveho_mesice": "Oltář nepraská ohněm, ale rudým světlem; staré nápisy připomínají, že každý rituál má svou cenu.",
     "palac_bohatych": "Za tanečním sálem visí portréty radních. U těch, kteří zmizeli z politiky, je rám vždy novější než obraz.",
@@ -865,7 +866,7 @@ NPC = {
     "nera_dymova": {
         "jmeno": "Nera, předákyně noční směny",
         "popis": "Zná každou dílnu Dýmové čtvrti a hledá dělníky, kteří se nevrátili domů.",
-        "lokace":         "dymova_ctvrt", "tekno_party",
+        "lokace": "dymova_ctvrt",
         "vek": 36,
         "dialogy": [
             "Když se komíny odmlčí, město poslouchá. Dnes v noci slyším něco, co se mi nelíbí.",

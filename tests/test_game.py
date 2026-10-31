@@ -1419,7 +1419,7 @@ class HraTesty(unittest.TestCase):
         hra = Hra()
         energie_pred = hra.hrac.sex_energy
         vystup = io.StringIO()
-        with patch("builtins.input", side_effect=["neplatne", "1"]), \
+        with patch("builtins.input", side_effect=["neplatne", "1", "1"]), \
              patch("game.lov.random.random", side_effect=[1.0, 0.0]), \
              patch("game.lov.vyber_charakter", return_value="amazonka"), \
              redirect_stdout(vystup):
@@ -2201,8 +2201,8 @@ class HraTesty(unittest.TestCase):
         self.assertIn("katakomby", LOKACE)
         self.assertIn("svatyne_krvaveho_mesice", LOKACE)
         self.assertIn("palac_bohatych", LOKACE)
-        self.assertEqual(len(LOKACE), 45)
-        self.assertEqual(len(NOVE_MESTSKE_LOKACE), 14)
+        self.assertEqual(len(LOKACE), 46)
+        self.assertEqual(len(NOVE_MESTSKE_LOKACE), 15)
         self.assertEqual(
             {
                 "kanalove_pruplavy",
@@ -2283,7 +2283,7 @@ class HraTesty(unittest.TestCase):
             vykresli_hlavni_menu(hra)
 
         self.assertIn("MĚSTSKÁ SÍŤ", vystup.getvalue())
-        self.assertIn("1/14 čtvrtí odhaleno", vystup.getvalue())
+        self.assertIn("1/15 čtvrtí odhaleno", vystup.getvalue())
         self.assertIn("Kořen mandragory (dnes dostupný)", vystup.getvalue())
 
     def test_uzemi_odhaluje_mapu_a_starai_save_zachova_mestske_cesty(self):
@@ -2391,7 +2391,14 @@ class HraTesty(unittest.TestCase):
             hra.svet.aktualni_lokace = lokace
             for volba in volby:
                 with self.subTest(lokace=lokace, volba=volba):
-                    with patch("builtins.input", side_effect=[volba, ""]), redirect_stdout(io.StringIO()):
+                    vstupy = [volba, ""]
+                    if lokace == "tekno_party":
+                        vstupy = (
+                            [volba, "0", "0"]
+                            if volba == "2"
+                            else [volba, "", "0"]
+                        )
+                    with patch("builtins.input", side_effect=vstupy), redirect_stdout(io.StringIO()):
                         hra.svet.menu_lokacni_akce(hra)
 
     def test_lokacni_odmeny_respektuji_limity_a_mafie_system(self):
@@ -2704,6 +2711,23 @@ class HraTesty(unittest.TestCase):
             obnovena.zivy_svet.trziste_sklady,
             svet.trziste_sklady,
         )
+
+    def test_adaptivni_cile_frakci_reaguji_na_stav_mesta_a_ukladaji_se(self):
+        hra = Hra()
+        svet = hra.zivy_svet
+        cil = svet.frakcni_cile["systemaci"]
+        mesto = svet.mesta[cil["mesto_id"]]
+        mesto.bezpeci = 30
+
+        zprava = svet._vyvin_cil_fakce("systemaci")
+
+        self.assertEqual(cil["nazev"], "Zajistit bezpečné trasy")
+        self.assertEqual(cil["uroven"], 2)
+        self.assertIn("Adaptivní AI", zprava)
+        obnovena = Hra.from_dict(hra.to_dict())
+        ulozeny_cil = obnovena.zivy_svet.frakcni_cile["systemaci"]
+        self.assertEqual(ulozeny_cil["nazev"], cil["nazev"])
+        self.assertEqual(ulozeny_cil["evoluce"], 1)
 
     def test_souboj_s_bojovou_partnerkou(self):
         from game.souboje import Souboj, Nepritel

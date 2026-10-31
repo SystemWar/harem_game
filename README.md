@@ -72,7 +72,7 @@ V hlavním menu se zobrazuje také podpis **Tvůrce: #LordRusty23**.
 
 ### Města a mapa
 
-Mapa obsahuje 45 propojených lokací ve dvou městech:
+Mapa obsahuje 46 propojených lokací ve dvou městech:
 
 - **Staré město** — pevnost, tržiště, přístav, akademie, hostinec a další
   městské, společenské, přírodní a nebezpečné oblasti.
@@ -83,14 +83,21 @@ Hráč objevuje lokace cestováním a průzkumem. Každá lokace má sousedy,
 atmosféru, nebezpečí a případné místní akce či odměny. Odhalené oblasti na
 mapě získávají barvu podle frakce s nejsilnějším vlivem; legenda rozlišuje
 frakční kontrolu a aktuální polohu hráče.
+Tekno Party je samostatná lokace se SoundSystemem a tržištěm pro fikční herní
+produkty.
 
 ### Frakce a místní simulace
 
-Jedenáct frakcí sleduje vlastní cíl. Jejich denní činnost může měnit bezpečí,
+Dvanáct frakcí sleduje vlastní cíl. Jejich denní činnost může měnit bezpečí,
 prosperitu či stabilitu měst, postupně ovlivňovat kontrolu lokací a vytvářet
 rozhodovací situace pro hráče. Městské hodnoty se drží v rozsahu 0–100 a jejich
 vzájemné působení znamená, že dlouhodobě nebezpečné či nestabilní město může
 ztrácet prosperitu.
+
+Frakce postupně rozvíjejí další etapy cílů. Adaptivní herní AI upravuje jejich
+priority podle bezpečí, prosperity a stability jejich města; změny se ukládají
+do hry a fungují offline bez externího modelu. Systemáci spravují SoundSystem
+v Tekno Party a jsou spojenci Narkomanů.
 
 Šest dvojic frakcí má navíc uložené vztahy. Rivalita může způsobit pokles
 bezpečí a stability, spojenectví naopak stabilitu posiluje. V nabídce živého
@@ -110,7 +117,7 @@ jejich poloha se ukládá. Hráč může otevřít jejich třídílné dlouhodob
 pomoci jim za zlato nebo podpořit jejich vlastní rozhodnutí. Dokončení příběhu
 ovlivní vztah, město a příslušnou frakci.
 
-Každá z jedenácti frakcí má vlastní starost, obchodní specializaci a tři
+Každá z dvanácti frakcí má vlastní starost, obchodní specializaci a tři
 příběhové kapitoly. Kronika frakcí v nabídce živého světa ukazuje jejich
 reputaci, město, aktuální téma příběhu a zboží. Příběhové rozhovory zobrazují
 konkrétní kapitolu příslušné frakce. Přehled obou měst navíc vypíše jejich

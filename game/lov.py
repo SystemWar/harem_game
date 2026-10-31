@@ -208,10 +208,6 @@ def lov_otrokyn(hra):
             hp=random.randint(70, 100),
             charakter=charakter,
             vek=random.randint(20, 35),
-            poslusnost=50,
-            submisivita=35,
-            loajalita=55,
-            touha=30,
         )
         hrac.gold += random.randint(10, 50)
         print(

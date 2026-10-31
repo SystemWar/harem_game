@@ -499,7 +499,9 @@ class HraTesty(unittest.TestCase):
         from utils import diagnostika
 
         with tempfile.TemporaryDirectory() as slozka:
-            with patch.dict("os.environ", {"APPDATA": slozka}):
+            with patch.dict(
+                "os.environ", {"APPDATA": slozka, "XDG_DATA_HOME": slozka}
+            ):
                 self.assertEqual(user_data_dir(), Path(slozka) / "HaremDark")
 
             with patch.object(diagnostika, "user_data_dir", return_value=Path(slozka)):

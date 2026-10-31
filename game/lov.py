@@ -249,10 +249,12 @@ def proved_zachranne_patranie(hra, lokace_id, technika, rng=None):
         else:
             hra.hrac.dark_energy -= 5
     elif technika == "2":
-        if hra.hrac.gold < 15:
-            tisk_chyba("Na domluvu s místními kontakty potřebuješ 15 zlata.")
+        if hra.hrac.gold < cena:
+            tisk_chyba(
+                f"Na domluvu s místními kontakty potřebuješ {cena} zlata."
+            )
             return False
-        hra.hrac.gold -= 15
+        hra.hrac.gold -= cena
     else:
         vojaci = max(0, int(hra.mafie.vojaci))
         if vojaci < 2:

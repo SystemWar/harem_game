@@ -2729,6 +2729,48 @@ class HraTesty(unittest.TestCase):
         self.assertEqual(ulozeny_cil["nazev"], cil["nazev"])
         self.assertEqual(ulozeny_cil["evoluce"], 1)
 
+    def test_tekno_party_nakupuje_a_prodava_skladove_zasoby(self):
+        from game.drogovy_provoz import menu_tekno_party, PRODEJNI_CENA
+
+        hra = Hra()
+        gold_pred = hra.hrac.gold
+        nakupni_cena = max(
+            PRODEJNI_CENA["konopny_kvet"] + 1,
+            int(PRODEJNI_CENA["konopny_kvet"] * 1.35),
+        )
+        with patch(
+            "builtins.input",
+            side_effect=["2", "1", "2", "", "0"],
+        ), redirect_stdout(io.StringIO()):
+            menu_tekno_party(hra)
+
+        self.assertEqual(hra.hrac.gold, gold_pred - nakupni_cena * 2)
+        self.assertEqual(hra.drogovy_provoz["sklad"]["konopny_kvet"], 2)
+
+        with patch(
+            "builtins.input",
+            side_effect=["1", "1", "1", "", "0"],
+        ), redirect_stdout(io.StringIO()):
+            menu_tekno_party(hra)
+
+        self.assertEqual(hra.hrac.gold, gold_pred - nakupni_cena * 2 + 18)
+        self.assertEqual(hra.drogovy_provoz["sklad"]["konopny_kvet"], 1)
+
+    def test_zachranne_patrani_uplatni_cenu_zobrazene_techniky(self):
+        from game.lov import proved_zachranne_patranie
+
+        hra = Hra()
+        hra.hrac.gold = 20
+
+        with patch("game.lov.random.random", return_value=1.0), \
+             redirect_stdout(io.StringIO()):
+            uspech = proved_zachranne_patranie(
+                hra, "tekno_party", "2"
+            )
+
+        self.assertFalse(uspech)
+        self.assertEqual(hra.hrac.gold, 10)
+
     def test_souboj_s_bojovou_partnerkou(self):
         from game.souboje import Souboj, Nepritel
         hra = Hra()

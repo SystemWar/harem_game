@@ -418,8 +418,12 @@ class ZivySvetSystem:
                 self.frakcni_cile[frakce_id] = cil
             cil.setdefault("nazev", nazev)
             cil.setdefault("popis", popis)
+            cil.setdefault("nazev_zakladni", nazev)
+            cil.setdefault("popis_zakladni", popis)
             cil["cil"] = max(1, min(10, _kladne_cislo(cil.get("cil", 3))))
             cil["postup"] = min(cil["cil"], _kladne_cislo(cil.get("postup", 0)))
+            cil["uroven"] = max(1, min(5, _kladne_cislo(cil.get("uroven", 1))))
+            cil["evoluce"] = _kladne_cislo(cil.get("evoluce", 0))
             mesto_id = cil.get("mesto_id")
             if mesto_id not in MESTA:
                 mesto_id = _prvni_mesto_frakce(frakce_id)
@@ -784,12 +788,14 @@ class ZivySvetSystem:
             if cil["postup"] >= cil["cil"]:
                 if len(self.nabidky) < 10:
                     cil["postup"] = 0
+                    vyvoj = self._vyvin_cil_fakce(frakce_id)
                     nabidka = self._vytvor_nabidku(frakce_id, den)
                     self.nabidky.append(nabidka)
                     zpravy.append(
                         f"{nabidka['frakce_nazev']} pokročila ve svém cíli: "
                         f"{nabidka['cilek']}. Na rozhodnutí čeká nová situace."
                     )
+                    zpravy.append(vyvoj)
                 elif postup_pred < cil["cil"]:
                     zpravy.append(
                         f"{FRAKCNI_CILE[frakce_id][0]} dokončila cíl, ale "
@@ -953,8 +959,48 @@ class ZivySvetSystem:
         cil["posledni_akce"] = popis
         dopad_trhu = self._aplikuj_dopad_frakce_na_trh(frakce_id, mesto_id)
         return (
-            f"{mesto.nazev}: {FRAKCNI_CILE[frakce_id][0]} {popis}"
+            f"{mesto.nazev}: {cil['nazev']} — {popis}"
             f"{dopad_trhu}"
+        )
+
+    def _vyvin_cil_fakce(self, frakce_id):
+        """Přizpůsobí další cíl frakce opakovaným výsledkům a místní krizi."""
+        cil = self.frakcni_cile[frakce_id]
+        cil["uroven"] = min(5, cil["uroven"] + 1)
+        cil["evoluce"] += 1
+        cil["cil"] = min(10, 3 + cil["uroven"] // 2)
+        mesto = self.mesta[cil["mesto_id"]]
+        metrika = min(
+            ("bezpeci", "prosperita", "stabilita"),
+            key=lambda polozka: getattr(mesto, polozka),
+        )
+        if getattr(mesto, metrika) <= 55:
+            adaptivni_cile = {
+                "bezpeci": (
+                    "Zajistit bezpečné trasy",
+                    "Frakce přesouvá své úsilí k hlídkám, doprovodu a pomoci v rizikových čtvrtích.",
+                ),
+                "prosperita": (
+                    "Obnovit místní zásoby",
+                    "Frakce upravuje svůj plán podle nedostatku zboží a potřeb městského trhu.",
+                ),
+                "stabilita": (
+                    "Urovnat napětí ve městě",
+                    "Frakce hledá spojence a mění své kroky podle sporů mezi místními skupinami.",
+                ),
+            }
+            cil["nazev"], cil["popis"] = adaptivni_cile[metrika]
+        else:
+            cil["nazev"] = (
+                f"{cil['nazev_zakladni']} — etapa {cil['uroven']}"
+            )
+            cil["popis"] = (
+                f"{cil['popis_zakladni']} Další etapa rozšiřuje její síť "
+                f"v oblasti města {mesto.nazev}."
+            )
+        return (
+            f"Adaptivní AI: {FRAKCNI_CILE[frakce_id][0]} přizpůsobila "
+            f"svůj plán místní situaci (etapa {cil['uroven']})."
         )
 
     def _aplikuj_dopad_frakce_na_trh(self, frakce_id, mesto_id):

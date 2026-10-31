@@ -213,6 +213,7 @@ class Souboj:
         self.hrac = hrac
         self.mafie = mafie
         self.hra = hra
+        self._taktika_pristi_kolo = None
         if isinstance(mafie, Nepritel):
             self.nepritel = mafie
         else:
@@ -541,7 +542,16 @@ class Souboj:
                 self._zobraz_taktiku_a_zbrane()
                 continue
 
-            obranny_bonus = 0
+            taktika = self._taktika_pristi_kolo
+            self._taktika_pristi_kolo = None
+            bonus_utoku_taktiky = 0
+            obranny_bonus = 8 if taktika == "obrana" else 0
+            if taktika == "utok":
+                bonus_utoku_taktiky = 10
+            elif taktika == "armada" and self.mafie:
+                bonus_utoku_taktiky = (
+                    8 + max(0, self.mafie.kapitanove) * 3
+                )
             preskocit_utok_nepritele = False
             vyleceno = 0
 
@@ -629,7 +639,11 @@ class Souboj:
             # Výpočet zranění uděleného nepříteli
             obrana_nepr = max(0, nepritel.obrana - (4 if kletba_nepritele > 0 else 0))
             if utok_hrac:
-                poskozeni = max(1, utok_hrac - obrana_nepr + random.randint(-2, 2))
+                poskozeni = max(
+                    1,
+                    utok_hrac + bonus_utoku_taktiky
+                    - obrana_nepr + random.randint(-2, 2),
+                )
                 nepritel.hp -= poskozeni
                 print(f"\n  {GREEN}⚔ Tvůj útok: -{poskozeni} HP → {nepritel.jmeno}: {max(0, nepritel.hp)}/{nepritel.max_hp}{NC}")
 
@@ -744,11 +758,30 @@ class Souboj:
         else:
             for idx, zbran in enumerate(self.hrac.inventar.zbrane, 1):
                 print(f"  {idx}) {zbran.nazev} [{zbran.typ}] — +{zbran.poskozeni} dmg")
-        print("\nTaktické rady:")
-        print("  1) Získávat přesné útoky a léčit po temném vampirismu je lepší než bojovat ve frontě.")
-        print("  2) Těžké zbraně srážejí HP, ale dělají nejvíc škody až po obranném postoji.")
-        print("  3) Magické zbraně a výzkum se dají kombinovat pro vyšší útočnou stabilitu.")
-        print("  4) Zbraně typu 'dlouha' se hodí při první vlně útoku, 'meč' je vyvážený a 'těžký' zabírá v závěru.")
+        print("\nZvol přípravu na svůj příští tah:")
+        print("1) Průlomový úder — příští útok způsobí +10 poškození.")
+        print("2) Obranná linie — příští zásah bude snížen o 8.")
+        print("3) Armádní manévr — příští útok +8 a +3 za každého kapitána.")
+        print("0) Zpět bez změny")
+        try:
+            volba = input("> ").strip()
+        except EOFError:
+            return
+        if volba == "1":
+            self._taktika_pristi_kolo = "utok"
+            tisk_ok("Připravil jsi průlomový úder pro příští tah.")
+        elif volba == "2":
+            self._taktika_pristi_kolo = "obrana"
+            tisk_ok("Zaujal jsi obrannou linii pro příští tah.")
+        elif volba == "3":
+            vojaci = max(0, int(getattr(self.mafie, "vojaci", 0)))
+            if vojaci < 1:
+                tisk_chyba("Armádní manévr vyžaduje alespoň jednoho vojáka.")
+            else:
+                self._taktika_pristi_kolo = "armada"
+                tisk_ok("Oddíl se připravil k součinnému útoku.")
+        elif volba != "0":
+            tisk_chyba("Neplatná taktika.")
         try:
             input("Enter...")
         except EOFError:

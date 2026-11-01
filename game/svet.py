@@ -2155,6 +2155,7 @@ class SvetSystem:
         print(f"\n{DIM}{npc['popis']}{NC}")
         print(f"{CYAN}Vztah: {vztah:+d} | Tvá temná energie: {hra.hrac.dark_energy} | Zlato: {hra.hrac.gold} 🪙{NC}\n")
 
+        uspesna_volba = False
         if npc_id == "vespera":
             print(f"{MAGENTA}Vespera sedí na chladné kamenné zemi cely inkvizičního žaláře.{NC}")
             print(f"Její tělo je spoutáno okovy z černého železa, ale ve fialových očích stále plane divoký oheň.")
@@ -2193,6 +2194,7 @@ class SvetSystem:
                         hra.harem.pridat(nova)
                         self.zmen_vztah(npc_id, 25)
                         tisk_ok("★ ÚSPĚCH! Vespera byla osvobozena a vděčně se připojila k tvému harému jako mocná čarodějka!")
+                        uspesna_volba = True
                         if hasattr(hra, "kronika"):
                             from game.kronika import zaznamenej
                             zaznamenej(hra, "Inkviziční žalář: osvobozena čarodějka Vespera do harému dominia.")
@@ -2208,10 +2210,12 @@ class SvetSystem:
                 self.zmen_vztah(npc_id, 8)
                 print(f"\n{MAGENTA}Vespera ti zašeptala starobylou formuli zapomenutého stínového kruhu.{NC}")
                 tisk_ok("Získal jsi +25 temné energie a 2 temné krystaly pro pevnost!")
+                uspesna_volba = True
             elif v == "3":
                 self.zmen_vztah(npc_id, 4)
                 print(f"\n{RED}Vespera zatne zuby, ale v očích se jí mihne záblesk podrobení a respektu.{NC}")
                 print(f"„Mnozí se o to pokoušeli, pane... ale tvůj pohled má váhu, kterou nelze ignorovat.“")
+                uspesna_volba = True
 
         elif npc_id == "selene":
             print(f"{CYAN}Vědma Selene levituje nad astrálním kruhem rozpadlé citadely.{NC}")
@@ -2231,6 +2235,7 @@ class SvetSystem:
                 for o in hra.harem.vsechny_aktivni():
                     o.loajalita = min(100, o.loajalita + 6)
                 tisk_ok("Astrální věštba vnesla klid do tvého harému. Žárlivost manželek klesla o 20 %, loajalita vzrostla!")
+                uspesna_volba = True
             elif v == "2":
                 if hra.hrac.dark_energy >= 20:
                     hra.hrac.dark_energy -= 20
@@ -2240,6 +2245,7 @@ class SvetSystem:
                         hra.hrac.max_sex_energy += 10
                     self.zmen_vztah(npc_id, 10)
                     tisk_ok("★ ASTRÁLNÍ PROBUZENÍ! Tvé tělo zaplavil kosmický žár: trvale +5 Max HP a +10 Max energie!")
+                    uspesna_volba = True
                     if hasattr(hra, "kronika"):
                         from game.kronika import zaznamenej
                         zaznamenej(hra, "Astrální citadela: Selene posvětila tvou duši astrálním probuzením.")
@@ -2251,6 +2257,7 @@ class SvetSystem:
                     hra.pevnost.kamen += 50
                 self.zmen_vztah(npc_id, 8)
                 tisk_ok("Selene ti předala prastaré runové nákresy: +4 temné krystaly a +50 kamene pro pevnost!")
+                uspesna_volba = True
 
         elif npc_id == "kapitanka_drake":
             print(f"{YELLOW}Kapitánka Drake sedí na sudu rumu u mola Zátoky vraků a brousí si šavli.{NC}")
@@ -2271,6 +2278,7 @@ class SvetSystem:
                         hra.pevnost.zelezo += 20
                     self.zmen_vztah(npc_id, 8)
                     tisk_ok(f"✔ VÍTĚZNÁ RAZIE! Přepadli jste kupeckou loď. Zisk: +{korist_zlato} 🪙, +35 dřeva a +20 železa pro pevnost!")
+                    uspesna_volba = True
                 else:
                     tisk_chyba("Jsi příliš zraněný na námořní bitvu!")
             elif v == "2":
@@ -2291,6 +2299,7 @@ class SvetSystem:
                     hra.harem.pridat(nova)
                     self.zmen_vztah(npc_id, 10)
                     tisk_ok(f"★ Z podpalubí byla vyvedena {jmeno}. S vděčností a zvědavostí vstupuje do tvého harému!")
+                    uspesna_volba = True
                 else:
                     tisk_chyba("Kapitánka Drake neprodá zajatkyni pod 90 🪙.")
             elif v == "3":
@@ -2298,6 +2307,7 @@ class SvetSystem:
                 if hasattr(hra, "pevnost"):
                     hra.pevnost.zasoby += 20
                 tisk_ok("Drake uzavřela dohodu. Karavany v zátoce mají volný průjezd (+20 zásob jídla)!")
+                uspesna_volba = True
 
         elif npc_id == "inkvizitor_malor":
             print(f"{RED}Inkvizitor Malor si prohlíží železné kleště nad rozpálenou pánví.{NC}")
@@ -2312,12 +2322,14 @@ class SvetSystem:
                 hra.hrac.vliv_inkvizice = max(0, hra.hrac.vliv_inkvizice - 25)
                 self.zmen_vztah(npc_id, 4)
                 tisk_ok("Malor zatnul pěsti a ustoupil. Inkviziční komise odvolána! Vliv inkvizice -25.")
+                uspesna_volba = True
             elif v == "2":
                 if hra.hrac.dark_energy >= 18:
                     hra.hrac.dark_energy -= 18
                     hra.hrac.vliv_inkvizice = max(0, hra.hrac.vliv_inkvizice - 18)
                     self.zmen_vztah(npc_id, 6)
                     tisk_ok("Tvá temná aura zastrašila i inkvizitora. Malor couvl v posvátné bázni! Inkvizice -18.")
+                    uspesna_volba = True
                 else:
                     tisk_chyba("Nemáš dostatek temné energie k zastrašení fanatického inkvizitora!")
             elif v == "3":
@@ -2326,6 +2338,7 @@ class SvetSystem:
                     hra.hrac.vliv_inkvizice = max(0, hra.hrac.vliv_inkvizice - 15)
                     self.zmen_vztah(npc_id, 8)
                     tisk_ok("Malor přijal dar. Inkviziční vyšetřování pozastaveno (-15 vliv inkvizice).")
+                    uspesna_volba = True
                 else:
                     tisk_chyba("Nemáš 70 🪙 na úplatek.")
 
@@ -2346,6 +2359,7 @@ class SvetSystem:
                         hra.pevnost.zelezo += 40
                     self.zmen_vztah(npc_id, 6)
                     tisk_ok("Výhodný obchod uzavřen! Pro tvou pevnost bylo naloženo +80 kamene a +40 železa!")
+                    uspesna_volba = True
                 else:
                     tisk_chyba("Potřebuješ alespoň 50 🪙.")
             elif v == "2":
@@ -2366,12 +2380,14 @@ class SvetSystem:
                     hra.harem.pridat(nova)
                     self.zmen_vztah(npc_id, 8)
                     tisk_ok(f"★ Amazonka {jmeno} byla zbavena těžkých okovů a připojila se k tvému harému!")
+                    uspesna_volba = True
                 else:
                     tisk_chyba("Krag za méně než 85 🪙 otrokyni nepropustí.")
             elif v == "3":
                 self.zmen_vztah(npc_id, 6)
                 hra.hrac.reputace_mesta += 3
                 tisk_ok("Dozorci uznávají tvou autoritu a respektují tvé dominium (+3 reputace města)!")
+                uspesna_volba = True
 
         else:
             # Obecný příběhový dialog s větvením pro ostatní NPC
@@ -2385,6 +2401,7 @@ class SvetSystem:
                 self.zmen_vztah(npc_id, 6)
                 hra.hrac.reputace_mesta += 2
                 tisk_ok(f"Rozhovor s {npc['jmeno']} prohloubil vaše porozumění (vztah +6, reputace +2).")
+                uspesna_volba = True
             elif v == "2":
                 self.zmen_vztah(npc_id, 4)
                 hra.hrac.dark_energy = min(
@@ -2392,14 +2409,32 @@ class SvetSystem:
                     hra.hrac.dark_energy + 8
                 )
                 tisk_ok(f"{npc['jmeno']} cítí tvou sílu a sklání hlavu (vztah +4, temná energie +8).")
+                uspesna_volba = True
 
         vzpominky = {
-            "1": "naslouchání a nabídka spolupráce",
-            "2": "mocenské řešení",
-            "3": "vyjednávání o konkrétní dohodě",
+            ("vespera", "1"): "nabídka svobody Vesperě",
+            ("vespera", "2"): "učení o magii stínů",
+            ("vespera", "3"): "projev autority vůči Vesperě",
+            ("selene", "1"): "věštba o harmonii harému",
+            ("selene", "2"): "astrální probuzení",
+            ("selene", "3"): "runové nákresy pro pevnost",
+            ("kapitanka_drake", "1"): "nájezd na kupeckou galeonu",
+            ("kapitanka_drake", "2"): "odkup zajatkyně od Drake",
+            ("kapitanka_drake", "3"): "pirátská ochrana karavan",
+            ("inkvizitor_malor", "1"): "ústup inkvizice kvůli kompromitujícím materiálům",
+            ("inkvizitor_malor", "2"): "zastrašení Malora temnou mocí",
+            ("inkvizitor_malor", "3"): "dar inkvizici",
+            ("dozorce_krag", "1"): "nákup kamene a železa od Kraga",
+            ("dozorce_krag", "2"): "vykoupení amazonky z lomu",
+            ("dozorce_krag", "3"): "ukázka disciplíny dozorcům",
+            ("*", "1"): "naslouchání a nabídka spolupráce",
+            ("*", "2"): "mocenské řešení",
         }
-        if v in vzpominky:
-            self.zaznamenej_rozhovor(npc_id, vzpominky[v], hra.hrac.den)
+        zapamatovana_volba = vzpominky.get(
+            (npc_id, v), vzpominky.get(("*", v))
+        )
+        if uspesna_volba and zapamatovana_volba:
+            self.zaznamenej_rozhovor(npc_id, zapamatovana_volba, hra.hrac.den)
 
         input("\nEnter...")
 

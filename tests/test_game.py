@@ -1969,6 +1969,46 @@ class HraTesty(unittest.TestCase):
         self.assertIn("Mira, potulná léčitelka si pamatuje", vystup.getvalue())
         self.assertIn("naslouchání a nabídka spolupráce", vystup.getvalue())
 
+    def test_pribehovy_rozhovor_zaznamenava_jen_uspesnou_spravnou_volbu(self):
+        from game.svet import NPC
+
+        hra = Hra()
+        with patch("builtins.input", side_effect=["1", ""]), \
+                redirect_stdout(io.StringIO()):
+            hra.svet.pribehovy_rozhovor("mira", NPC["mira"], hra)
+        self.assertEqual(
+            hra.svet.pamet_rozhovoru["mira"]["volba"],
+            "naslouchání a nabídka spolupráce",
+        )
+
+        hra = Hra()
+        hra.hrac.gold = 100
+        hra.hrac.dark_energy = 0
+        with patch("builtins.input", side_effect=["1", ""]), \
+                redirect_stdout(io.StringIO()):
+            hra.svet.pribehovy_rozhovor("vespera", NPC["vespera"], hra)
+        self.assertEqual(
+            hra.svet.pamet_rozhovoru["vespera"]["volba"],
+            "nabídka svobody Vesperě",
+        )
+
+        hra = Hra()
+        with patch("builtins.input", side_effect=["9", ""]), \
+                redirect_stdout(io.StringIO()):
+            hra.svet.pribehovy_rozhovor("mira", NPC["mira"], hra)
+        self.assertNotIn("mira", hra.svet.pamet_rozhovoru)
+
+        hra = Hra()
+        hra.svet.zaznamenej_rozhovor(
+            "selene", "předchozí úspěšná volba", hra.hrac.den
+        )
+        pamet_pred = dict(hra.svet.pamet_rozhovoru["selene"])
+        hra.hrac.dark_energy = 0
+        with patch("builtins.input", side_effect=["2", ""]), \
+                redirect_stdout(io.StringIO()):
+            hra.svet.pribehovy_rozhovor("selene", NPC["selene"], hra)
+        self.assertEqual(hra.svet.pamet_rozhovoru["selene"], pamet_pred)
+
     def test_kampan_temna_volba_ma_viditelny_prosperitni_i_bezpecnostni_dopad(self):
         hra = Hra()
         hra.kampan.kapitola = 2

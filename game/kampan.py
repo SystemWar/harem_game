@@ -9,30 +9,35 @@ KAPITOLY = (
         "popis": "Zjisti, proč se v okolí pevnosti ztrácejí lidé a zásoby.",
         "cil": "navstiv_trh",
         "lokace": "trh",
+        "ukol": "Prozkoumej Starý trh a najdi stopu k přístavu.",
     },
     {
         "nazev": "Cena spojenectví",
         "popis": "Vyber si spojence, který pomůže udržet pevnost v bezpečí.",
         "cil": "vyber_spojence",
         "lokace": "pristav",
+        "ukol": "Navštiv Černý přístav a vyber si spojence.",
     },
     {
         "nazev": "Noc dlouhých stínů",
         "popis": "Rozhodni, zda odhalíš síť pašeráků, nebo ji využiješ k záchraně města.",
         "cil": "uzavri_kampan",
         "lokace": "hranice",
+        "ukol": "Prověř Hraniční ves a rozhodni o pašerácké síti.",
     },
     {
         "nazev": "Zahrada tichých slibů",
         "popis": "Najdi místo, kde mohou spojenci mluvit otevřeně a bez nátlaku.",
         "cil": "navstiv_zahradu",
         "lokace": "sklenena_zahrada",
+        "ukol": "Sejdi se se spojenci ve Skleněné zahradě.",
     },
     {
         "nazev": "Hvězdný tribunál",
         "popis": "Poraz Strážce hvězdné brány a rozhodni, jakou budoucnost nabídneš svým spojencům.",
         "cil": "uzavri_hvezdny_slib",
         "lokace": "observator",
+        "ukol": "Poraz Strážce v observatoři a vyber závěr kampaně.",
     },
 )
 
@@ -45,6 +50,46 @@ class KampanSystem:
     boss_porazeni: list = field(default_factory=list)
     dokonceno: bool = False
     zaver: str = ""
+    milniky: list = field(default_factory=list)
+
+    def _dokonci_cil(self, hra, kapitola, odmena_xp, popis, odmena):
+        cil = kapitola["cil"]
+        if cil not in self.splnene_cile:
+            self.splnene_cile.append(cil)
+        hra.hrac.pridej_xp(odmena_xp)
+        self.milniky.append({
+            "kapitola": self.kapitola + 1,
+            "nazev": kapitola["nazev"],
+            "den": hra.hrac.den,
+            "popis": popis,
+            "odmena": odmena,
+        })
+        self.milniky = self.milniky[-20:]
+        self.kapitola += 1
+
+    @staticmethod
+    def _uprav_mesto(hra, mesto_id, **zmeny):
+        mesto = getattr(getattr(hra, "zivy_svet", None), "mesta", {}).get(mesto_id)
+        if not mesto:
+            return {}
+        predchozi = {atribut: getattr(mesto, atribut) for atribut in zmeny}
+        mesto.uprav(**zmeny)
+        return {
+            atribut: getattr(mesto, atribut) - hodnota
+            for atribut, hodnota in predchozi.items()
+        }
+
+    @staticmethod
+    def _popis_dopadu_mesta(dopady):
+        nazvy = {
+            "bezpeci": "bezpečí",
+            "prosperita": "prosperita",
+            "stabilita": "stabilita",
+        }
+        return ", ".join(
+            f"{nazvy[atribut]} {zmena:+d}"
+            for atribut, zmena in dopady.items()
+        )
 
     def aktualni(self):
         if self.dokonceno or self.kapitola >= len(KAPITOLY):
@@ -57,16 +102,20 @@ class KampanSystem:
             return
         if kapitola["cil"] == "navstiv_trh" and hra.svet.navstiveno.get("trh", 0):
             hra.svet.odhal_lokaci("pristav")
-            self.splnene_cile.append(kapitola["cil"])
-            hra.hrac.pridej_xp(25)
+            self._dokonci_cil(
+                hra, kapitola, 25,
+                "Na Starém trhu jsi našel stopu vedoucí k přístavu.",
+                "+25 XP; odhalen Černý přístav",
+            )
             tisk_ok("Kapitola dokončena. Přístav je nyní dostupný.")
-            self.kapitola += 1
         elif kapitola["cil"] == "navstiv_zahradu" and hra.svet.navstiveno.get("sklenena_zahrada", 0):
             hra.svet.odhal_lokaci("observator")
-            self.splnene_cile.append(kapitola["cil"])
-            hra.hrac.pridej_xp(55)
+            self._dokonci_cil(
+                hra, kapitola, 55,
+                "V zahradě spojenci odhalili cestu k observatoři.",
+                "+55 XP; odhalena Observatoř",
+            )
             tisk_ok("Zahrada odhalila cestu k observatoři. Nová kapitola začíná.")
-            self.kapitola += 1
 
     def urci_zaver(self, hra):
         """Vyhodnotí reputaci, vztahy a zásadní rozhodnutí kampaně."""
@@ -115,51 +164,88 @@ class KampanSystem:
             if not hra.svet.navstiveno.get("trh", 0):
                 tisk_chyba("Nejdřív navštiv Starý trh.")
                 return False
-            self.splnene_cile.append(kapitola["cil"])
             hra.svet.odhal_lokaci("pristav")
-            hra.hrac.pridej_xp(25)
-            self.kapitola += 1
+            self._dokonci_cil(
+                hra, kapitola, 25,
+                "Na Starém trhu jsi našel stopu vedoucí k přístavu.",
+                "+25 XP; odhalen Černý přístav",
+            )
             tisk_ok("Kapitola dokončena. Přístav je nyní dostupný.")
             return True
         if kapitola["cil"] == "vyber_spojence":
+            if not hra.svet.navstiveno.get("pristav", 0):
+                tisk_chyba("Nejdřív navštiv Černý přístav.")
+                return False
             npc_id = ("mira", "radan")[index]
             hra.svet.zmen_vztah(npc_id, 15)
-            hra.hrac.reputace_mesta += 5 if index == 0 else 0
-            hra.hrac.dark_energy = min(100, hra.hrac.dark_energy + (0 if index == 0 else 15))
+            if index == 0:
+                hra.hrac.reputace_mesta += 5
+                dopady = self._uprav_mesto(
+                    hra, "stare_mesto", bezpeci=3, stabilita=2
+                )
+                dusledek = (
+                    "Město: " + self._popis_dopadu_mesta(dopady) + "."
+                )
+            else:
+                hra.hrac.dark_energy = min(100, hra.hrac.dark_energy + 15)
+                dopady = self._uprav_mesto(
+                    hra, "stare_mesto", prosperita=3, bezpeci=-1
+                )
+                dusledek = (
+                    "Město: " + self._popis_dopadu_mesta(dopady) + "."
+                )
             hra.svet.odhal_lokaci("hranice")
             self.volby.append({"kapitola": self.kapitola, "volba": npc_id})
-            self.splnene_cile.append(kapitola["cil"])
-            hra.hrac.pridej_xp(40)
-            self.kapitola += 1
-            tisk_ok(f"Zvolil jsi spojence: {npc_id}. Hraniční ves je dostupná.")
+            self._dokonci_cil(
+                hra, kapitola, 40,
+                f"Zvolil jsi spojence: {npc_id}. {dusledek}",
+                f"+40 XP; vztah {npc_id} +15; {dusledek}",
+            )
+            tisk_ok(f"Zvolil jsi spojence: {npc_id}. {dusledek} Hraniční ves je dostupná.")
             return True
         if kapitola["cil"] == "uzavri_kampan":
             if hra.svet.navstiveno.get("hranice", 0) == 0:
                 tisk_chyba("Nejdřív navštiv Hraniční ves.")
                 return False
             self.volby.append({"kapitola": self.kapitola, "volba": "odhalit" if index == 0 else "vyuzit"})
-            self.splnene_cile.append(kapitola["cil"])
             if index == 0:
                 hra.hrac.reputace_mesta += 12
                 hra.hrac.vliv_inkvizice = max(0, hra.hrac.vliv_inkvizice - 8)
                 hra.hrac.inventar.pridej_predmet("dukazni_listina")
+                dopady = self._uprav_mesto(
+                    hra, "stare_mesto", bezpeci=5, stabilita=3
+                )
+                dusledek = (
+                    "Veřejné odhalení změnilo stav města: "
+                    + self._popis_dopadu_mesta(dopady) + "."
+                )
             else:
                 hra.hrac.gold += 220
                 hra.mafie.vliv_ve_meste = min(100, hra.mafie.vliv_ve_meste + 10)
-            hra.hrac.pridej_xp(80)
+                dopady = self._uprav_mesto(
+                    hra, "stare_mesto", prosperita=4, bezpeci=-5
+                )
+                dusledek = (
+                    "Pašerácká síť přinesla zlato; město: "
+                    + self._popis_dopadu_mesta(dopady) + "."
+                )
+            self._dokonci_cil(
+                hra, kapitola, 80, dusledek, f"+80 XP; {dusledek}",
+            )
             hra.svet.odhal_lokaci("sklenena_zahrada")
-            self.kapitola += 1
             self.dokonceno = False
-            tisk_ok("Síť je uzavřena, ale příběh pokračuje. Na mapě se objevila Skleněná zahrada.")
+            tisk_ok(f"Síť je uzavřena. {dusledek} Na mapě se objevila Skleněná zahrada.")
             return True
         if kapitola["cil"] == "navstiv_zahradu":
             if not hra.svet.navstiveno.get("sklenena_zahrada", 0):
                 tisk_chyba("Nejdřív navštiv Skleněnou zahradu.")
                 return False
             hra.svet.odhal_lokaci("observator")
-            self.splnene_cile.append(kapitola["cil"])
-            hra.hrac.pridej_xp(55)
-            self.kapitola += 1
+            self._dokonci_cil(
+                hra, kapitola, 55,
+                "V zahradě spojenci odhalili cestu k observatoři.",
+                "+55 XP; odhalena Observatoř",
+            )
             tisk_ok("Cesta k observatoři je otevřená.")
             return True
         if kapitola["cil"] == "uzavri_hvezdny_slib":
@@ -171,26 +257,48 @@ class KampanSystem:
                 return False
             volba_id = ("spolecna_cesta", "samostatne_cesty")[index]
             self.volby.append({"kapitola": self.kapitola, "volba": volba_id})
-            self.splnene_cile.append(kapitola["cil"])
             if index == 0:
                 hra.hrac.reputace_mesta += 10
                 hra.hrac.sex_energy = min(100, hra.hrac.sex_energy + 20)
+                dopady_stare = self._uprav_mesto(
+                    hra, "stare_mesto", bezpeci=2, stabilita=4
+                )
+                dopady_brod = self._uprav_mesto(
+                    hra, "vychodni_brod", stabilita=2
+                )
+                dusledek = (
+                    "Aliance — Staré město: "
+                    + self._popis_dopadu_mesta(dopady_stare)
+                    + "; Východní Brod: "
+                    + self._popis_dopadu_mesta(dopady_brod) + "."
+                )
                 tisk_ok("Zvolil jsi společnou cestu založenou na důvěře a vzájemném souhlasu.")
             else:
                 hra.hrac.reputace_mesta += 6
                 hra.hrac.dark_energy = min(100, hra.hrac.dark_energy + 25)
+                dopady = self._uprav_mesto(
+                    hra, "stare_mesto", prosperita=2, stabilita=-1
+                )
+                dusledek = (
+                    "Samostatné cesty — Staré město: "
+                    + self._popis_dopadu_mesta(dopady) + "."
+                )
                 tisk_ok("Podpořil jsi samostatnost spojenců; návraty budou mít větší váhu.")
-            hra.hrac.pridej_xp(120)
-            self.kapitola += 1
+            self._dokonci_cil(
+                hra, kapitola, 120, dusledek, f"+120 XP; {dusledek}",
+            )
             self.dokonceno = True
             self.zaver = self.urci_zaver(hra)
             popisy = {
                 "Sjednocené město": "Spojenci vytvořili městskou alianci založenou na důvěře.",
                 "Vláda stínů": "Město se uklonilo síti vlivu a pevnost ovládá podsvětí.",
                 "Křehký mír": "Podařilo se odvrátit nejhorší, ale důvěra se bude teprve stavět.",
+                "Pevnost otevřených dveří": "Silná pevnost se stala bezpečným bodem pro obyvatele města.",
+                "Putující spojenci": "Spojenci vyrazili do světa a budují vlastní cesty.",
             }
             tisk_ok(f"Hvězdný tribunál je uzavřen. Konec: {self.zaver}.")
             tisk_info(popisy[self.zaver])
+            tisk_info(dusledek)
             return True
         return False
 
@@ -202,6 +310,7 @@ class KampanSystem:
             "boss_porazeni": self.boss_porazeni,
             "dokonceno": self.dokonceno,
             "zaver": self.zaver,
+            "milniky": self.milniky,
         }
 
     @classmethod
@@ -224,6 +333,10 @@ class KampanSystem:
             boss_porazeni=data.get("boss_porazeni", []) if isinstance(data.get("boss_porazeni", []), list) else [],
             dokonceno=dokonceno,
             zaver=data.get("zaver", "") if isinstance(data.get("zaver", ""), str) else "",
+            milniky=[
+                zaznam for zaznam in data.get("milniky", [])
+                if isinstance(zaznam, dict)
+            ][-20:] if isinstance(data.get("milniky", []), list) else [],
         )
 
     def menu(self, hra):
@@ -238,8 +351,29 @@ class KampanSystem:
                 return
             print(f"Kapitola {self.kapitola + 1}/{len(KAPITOLY)}: {kapitola['nazev']}")
             print(kapitola["popis"])
-            print(f"Cíl: navštívit {LOKACE[kapitola['lokace']]['nazev']}")
-            if kapitola["cil"] in ("navstiv_trh", "navstiv_zahradu"):
+            posledni_volba = next(
+                (
+                    zaznam.get("volba") for zaznam in reversed(self.volby)
+                    if isinstance(zaznam, dict)
+                ),
+                None,
+            )
+            if posledni_volba:
+                print(f"Dosavadní rozhodnutí: {posledni_volba.replace('_', ' ')}")
+            print(f"Cíl: {kapitola.get('ukol', LOKACE[kapitola['lokace']]['nazev'])}")
+            if kapitola["cil"] == "uzavri_kampan" and hra.svet.navstiveno.get("hranice", 0):
+                print("Postup: hraniční cesta prověřena — vyber, co uděláš se sítí.")
+            elif kapitola["cil"] == "uzavri_hvezdny_slib":
+                stav_bosse = "poražen" if "strazce_hvezdne_brany" in self.boss_porazeni else "čeká na porážku"
+                print(f"Postup: Strážce hvězdné brány {stav_bosse}.")
+            ceka_na_navstevu = (
+                kapitola["cil"] in ("navstiv_trh", "navstiv_zahradu")
+                or (
+                    kapitola["cil"] == "vyber_spojence"
+                    and not hra.svet.navstiveno.get("pristav", 0)
+                )
+            )
+            if ceka_na_navstevu:
                 print(f"\nCestuj do lokace {LOKACE[kapitola['lokace']]['nazev']} a prozkoumej okolí.")
                 vytiskni_volbu('1', 'Zpět na mapu')
             elif kapitola["cil"] == "vyber_spojence":
@@ -255,9 +389,10 @@ class KampanSystem:
             volba = input("> ").strip()
             if volba == "0":
                 return
-            if kapitola["cil"] in ("navstiv_trh", "navstiv_zahradu"):
+            if ceka_na_navstevu:
                 tisk_info(f"Otevři mapu a vydej se do lokace: {LOKACE[kapitola['lokace']]['nazev']}.")
                 input("Enter...")
+                continue
             elif kapitola["cil"] == "uzavri_hvezdny_slib":
                 print("\n1) Pokračovat společně, s jasnými hranicemi a vzájemnou volbou")
                 vytiskni_volbu('2', 'Podpořit samostatné cesty a setkávat se bez vlastnění')

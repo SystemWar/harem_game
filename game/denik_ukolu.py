@@ -1,6 +1,8 @@
 """Přehled aktivních a dokončených úkolů napříč herními systémy."""
 
 from config import CYAN, DIM, GOLD, GREEN, MAGENTA, NC, YELLOW
+from game.kampan import KAPITOLY
+from game.cile_hry import prehled_cilu
 from game.npc_questy import NPC_QUESTY
 from game.svet import LOKACE, NPC
 from utils.vypis import clear, hlavicka, menu_cara
@@ -79,15 +81,63 @@ def zobraz_denik_ukolu(hra):
     print(f"{CYAN}Hlavní kampaň{NC}")
     if kapitola:
         print(
-            f"  📖 Kapitola {hra.kampan.kapitola + 1}: "
+            f"  📖 Kapitola {hra.kampan.kapitola + 1}/{len(KAPITOLY)}: "
             f"{kapitola.get('nazev', 'Neznámá kapitola')}"
         )
         print(f"     {kapitola.get('popis', '')}")
-        print(
-            f"     Cíl: navštiv {_nazev_lokace(hra, kapitola.get('lokace'))}"
-        )
+        print(f"     Cíl: {kapitola.get('ukol', _nazev_lokace(hra, kapitola.get('lokace')))}")
+        print(f"     Další krok: {prehled_cilu(hra)['doporuceni']}")
     else:
         print(f"  {GREEN}Kampaň je dokončena.{NC}")
+        if hra.kampan.zaver:
+            print(f"     Závěr: {hra.kampan.zaver}")
+
+    volby_kampane = [
+        zaznam.get("volba")
+        for zaznam in hra.kampan.volby
+        if isinstance(zaznam, dict) and isinstance(zaznam.get("volba"), str)
+    ]
+    if volby_kampane:
+        print(f"     Tvá rozhodnutí: {' → '.join(volby_kampane)}")
+    milniky = getattr(hra.kampan, "milniky", [])
+    if milniky:
+        print(f"\n{GOLD}Nedávné milníky a odměny{NC}")
+        for zaznam in milniky[-5:]:
+            if not isinstance(zaznam, dict):
+                continue
+            print(
+                f"  Den {zaznam.get('den', '?')} · {zaznam.get('nazev', 'Milník')}: "
+                f"{zaznam.get('popis', '')}"
+            )
+            print(f"     Odměna: {zaznam.get('odmena', '—')}")
+
+    print(f"\n{CYAN}Stav měst po tvých rozhodnutích{NC}")
+    mesta = getattr(getattr(hra, "zivy_svet", None), "mesta", {})
+    for mesto_id in ("stare_mesto", "vychodni_brod"):
+        mesto = mesta.get(mesto_id) if isinstance(mesta, dict) else None
+        if mesto:
+            print(
+                f"  {mesto.nazev}: bezpečí {mesto.bezpeci}/100 · "
+                f"prosperita {mesto.prosperita}/100 · stabilita {mesto.stabilita}/100"
+            )
+
+    pamet = getattr(hra.svet, "pamet_rozhovoru", {})
+    zaznamy_pameti = sorted(
+        (
+            (NPC.get(npc_id, {}).get("jmeno", npc_id), zaznam)
+            for npc_id, zaznam in pamet.items()
+            if isinstance(zaznam, dict) and zaznam.get("pocet", 0)
+        ),
+        key=lambda dvojice: dvojice[1].get("den", 0),
+        reverse=True,
+    ) if isinstance(pamet, dict) else []
+    if zaznamy_pameti:
+        print(f"\n{MAGENTA}Postavy, které si pamatují tvá rozhodnutí{NC}")
+        for jmeno, zaznam in zaznamy_pameti[:5]:
+            print(
+                f"  {jmeno}: {zaznam.get('volba', 'rozhovor')} "
+                f"(setkání {zaznam.get('pocet', 0)}, den {zaznam.get('den', '?')})"
+            )
 
     menu_cara()
     print(f"\n{GOLD}Běžný úkol{NC}")

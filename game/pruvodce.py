@@ -2,7 +2,7 @@
 
 from config import CYAN, DIM, GOLD, GREEN, MAGENTA, NC, YELLOW
 from game.kampan import KAPITOLY
-from game.cile_hry import doporuceni_pro_pruvodce
+from game.cile_hry import doporuceni_pro_pruvodce, prehled_uvodu
 from utils.vypis import clear, hlavicka, menu_cara
 
 
@@ -18,11 +18,16 @@ def zobraz_pruvodce(hra):
     clear()
     hlavicka("Průvodce dominiem", "Rychlý start a doporučení pro tvou hru")
 
-    print(f"{GOLD}Jak začít{NC}")
-    print("  1. Prohlédni si harém a dostupné interakce (volba 1).")
-    print("  2. Navštěvuj mapu (8), mluv s NPC a postupuj v kampani (9).")
-    print("  3. Přijímej úkoly (14), vylepšuj postavu (4) a buduj své území (3, 16).")
-    print("  4. Odpočinek (12) obnoví síly, posune den a může spustit událost.")
+    uvod = prehled_uvodu(hra)
+    print(f"{GOLD}První kroky — {uvod['splneno']}/{len(uvod['kroky'])}{NC}")
+    for hotovo, nazev, instrukce in uvod["kroky"]:
+        stav = "✓" if hotovo else "○"
+        print(f"  {stav} {nazev}")
+        if not hotovo:
+            print(f"      {instrukce}")
+    if uvod["splneno"] == len(uvod["kroky"]):
+        print("  Úvod máš za sebou. Pokračuj kampaní nebo si zvol vlastní cíl.")
+    print("  Kampaň nabízí krátký příběhový cíl; vedlejší systémy můžeš hrát vlastním tempem.")
 
     menu_cara()
     print(f"\n{CYAN}Důležité systémy{NC}")

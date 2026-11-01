@@ -1904,6 +1904,100 @@ class HraTesty(unittest.TestCase):
         self.assertIn("Hlavní kampaň", text)
         self.assertEqual(hra.to_dict(), stav_pred)
 
+    def test_uvodni_cesta_a_pamet_npc_se_odvozuji_z_postupu_a_ukladaji(self):
+        from game.cile_hry import prehled_uvodu
+        from game.svet import NPC, SvetSystem
+
+        hra = Hra()
+        self.assertEqual(prehled_uvodu(hra)["splneno"], 0)
+        hra.svet.navstiveno["trh"] = 1
+        self.assertEqual(prehled_uvodu(hra)["splneno"], 1)
+
+        hra.svet.zaznamenej_rozhovor(
+            "mira", "naslouchání a nabídka spolupráce", hra.hrac.den
+        )
+        self.assertEqual(prehled_uvodu(hra)["splneno"], 2)
+        ulozeny_svet = SvetSystem.from_dict(hra.svet.to_dict())
+        self.assertEqual(ulozeny_svet.pamet_rozhovoru["mira"]["pocet"], 1)
+        self.assertEqual(ulozeny_svet.pamet_rozhovoru["mira"]["volba"],
+                         "naslouchání a nabídka spolupráce")
+        self.assertIn("mira", NPC)
+
+        hra.hrac.den = 2
+        self.assertEqual(prehled_uvodu(hra)["splneno"], 3)
+
+    def test_kampan_odemyka_kapitoly_a_zaznamenava_dusledky_rozhodnuti(self):
+        hra = Hra()
+        hra.svet.aktualni_lokace = "trh"
+        vystup = io.StringIO()
+        with redirect_stdout(vystup):
+            self.assertTrue(hra.svet.cestuj("trh", hra))
+        self.assertEqual(hra.kampan.kapitola, 1)
+        self.assertIn("pristav", hra.svet.odhalene_lokace)
+        self.assertEqual(hra.kampan.milniky[0]["odmena"],
+                         "+25 XP; odhalen Černý přístav")
+
+        mesto = hra.zivy_svet.mesta["stare_mesto"]
+        bezpeci_pred = mesto.bezpeci
+        hra.svet.aktualni_lokace = "pristav"
+        with redirect_stdout(io.StringIO()):
+            self.assertFalse(hra.kampan.zvol(hra, 0))
+            hra.svet.cestuj("pristav", hra)
+            self.assertTrue(hra.kampan.zvol(hra, 0))
+
+        self.assertEqual(hra.kampan.kapitola, 2)
+        self.assertEqual(mesto.bezpeci, bezpeci_pred + 3)
+        self.assertEqual(hra.svet.vztahy_npc["mira"], 15)
+        self.assertIn("bezpečí +3", hra.kampan.milniky[-1]["odmena"])
+
+        nactena = Hra.from_dict(hra.to_dict())
+        self.assertEqual(nactena.kampan.milniky, hra.kampan.milniky)
+        self.assertEqual(
+            nactena.zivy_svet.mesta["stare_mesto"].bezpeci, mesto.bezpeci
+        )
+
+    def test_npc_v_menu_pripomene_zapamatovanou_volbu(self):
+        hra = Hra()
+        hra.svet.aktualni_lokace = "trh"
+        hra.svet.zaznamenej_rozhovor(
+            "mira", "naslouchání a nabídka spolupráce", hra.hrac.den
+        )
+        vystup = io.StringIO()
+        with patch("builtins.input", side_effect=["1", "0"]), redirect_stdout(vystup):
+            hra.svet.menu_npc(hra)
+
+        self.assertIn("Mira, potulná léčitelka si pamatuje", vystup.getvalue())
+        self.assertIn("naslouchání a nabídka spolupráce", vystup.getvalue())
+
+    def test_kampan_temna_volba_ma_viditelny_prosperitni_i_bezpecnostni_dopad(self):
+        hra = Hra()
+        hra.kampan.kapitola = 2
+        hra.svet.navstiveno["hranice"] = 1
+        hra.svet.aktualni_lokace = "hranice"
+        mesto = hra.zivy_svet.mesta["stare_mesto"]
+        prosperita_pred = mesto.prosperita
+        bezpeci_pred = mesto.bezpeci
+
+        with redirect_stdout(io.StringIO()):
+            self.assertTrue(hra.kampan.zvol(hra, 1))
+
+        self.assertEqual(mesto.prosperita, prosperita_pred + 4)
+        self.assertEqual(mesto.bezpeci, bezpeci_pred - 5)
+        self.assertIn("prosperita +4, bezpečí -5", hra.kampan.milniky[-1]["popis"])
+
+    def test_kampan_zobrazi_vsechny_podporovane_zavery(self):
+        hra = Hra()
+        hra.kampan.kapitola = 4
+        hra.kampan.boss_porazeni.append("strazce_hvezdne_brany")
+        hra.svet.aktualni_lokace = "observator"
+        hra.hrac.reputace_mesta = 35
+        hra.pevnost.uroven = 3
+
+        with redirect_stdout(io.StringIO()):
+            self.assertTrue(hra.kampan.zvol(hra, 1))
+
+        self.assertEqual(hra.kampan.zaver, "Pevnost otevřených dveří")
+
     def test_pruvodce_dava_doporuceni_a_nemeni_hru(self):
         from game.pruvodce import zobraz_pruvodce
 

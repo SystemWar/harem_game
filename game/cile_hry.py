@@ -16,6 +16,46 @@ def _nazev_lokace(lokace_id):
     return LOKACE.get(lokace_id, {}).get("nazev", lokace_id or "neznámé lokaci")
 
 
+def prehled_uvodu(hra):
+    """Krátký, na skutečném postupu založený checklist pro první hodinu hry."""
+    rozhovory = getattr(hra.svet, "pamet_rozhovoru", {})
+    mluvil_s_npc = False
+    if isinstance(rozhovory, dict):
+        for zaznam in rozhovory.values():
+            if not isinstance(zaznam, dict):
+                continue
+            try:
+                mluvil_s_npc = int(zaznam.get("pocet", 0) or 0) > 0
+            except (TypeError, ValueError):
+                mluvil_s_npc = False
+            if mluvil_s_npc:
+                break
+    kroky = (
+        (
+            bool(hra.svet.navstiveno.get("trh", 0)),
+            "Navštiv Starý trh a objev první stopu kampaně.",
+            f"Mapa ({_cislo_volby('8')}) → Starý trh.",
+        ),
+        (
+            mluvil_s_npc,
+            "Promluv s NPC; postavy si pamatují, jak ses zachoval.",
+            f"Na Starém trhu stiskni N a oslov Miru nebo Eliana.",
+        ),
+        (
+            hra.hrac.den > 1,
+            "Odpočiň si a sleduj, jak na tvá rozhodnutí zareaguje město.",
+            f"Odpočinek ({_cislo_volby('12')}) posune svět do dalšího dne.",
+        ),
+    )
+    splneno = sum(1 for hotovo, _, _ in kroky if hotovo)
+    dalsi = next((krok for krok in kroky if not krok[0]), None)
+    return {
+        "kroky": kroky,
+        "splneno": splneno,
+        "doporuceni": dalsi[2] if dalsi else "",
+    }
+
+
 def _cil_kampane(hra):
     kapitola = hra.kampan.aktualni()
     if not kapitola:
@@ -35,6 +75,11 @@ def _cil_kampane(hra):
             f"Mapa ({_cislo_volby('8')}) → {_nazev_lokace(lokaci_id)}; navštiv lokaci a prozkoumej ji.",
         )
     if cil == "vyber_spojence":
+        if not hra.svet.navstiveno.get("pristav", 0):
+            return (
+                f"Kampaň {hra.kampan.kapitola + 1}/5: {nazev}",
+                f"Mapa ({_cislo_volby('8')}) → Černý přístav; po návštěvě zvol spojence v kampani ({_cislo_volby('9')}).",
+            )
         return (
             f"Kampaň {hra.kampan.kapitola + 1}/5: {nazev}",
             f"Kampaň ({_cislo_volby('9')}) → vyber spojence Miru nebo Radana.",

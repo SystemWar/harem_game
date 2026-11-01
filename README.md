@@ -52,6 +52,17 @@ savy. Řiď se proto názvy zobrazenými ve své hře; nabídka obsahuje mimo ji
 - fikční drogová laboratoř a pěstírna konopí s výrobou, prodejem a výzkumem;
 - manželství, rodinu, kroniku, kalendář a nastavení.
 
+Nová hra nabízí krátkou úvodní cestu: návštěvu Starého trhu, rozhovor s NPC
+a přechod do dalšího dne. Checklist v hlavním menu a průvodci se aktualizuje
+podle skutečného postupu; nemusíš plnit všechny vedlejší systémy najednou.
+Pětidílná kampaň má jasný další krok, odměny za kapitoly a volby, které mění
+bezpečí, prosperitu či stabilitu měst. Deník ukazuje poslední milníky a jejich
+odměny; po významných rozhodnutích se městské ukazatele zobrazí i v menu.
+
+NPC si ukládají poslední volbu z příběhového rozhovoru. Při dalším setkání ji
+připomenou a dřívější spojenectví v kampani ovlivní jejich reakci. Tyto údaje
+se bezpečně doplní i do starších uložených her.
+
 Terminálové rozhraní používá barevné ASCII ilustrace: profilům postav přidává
 stylizovaný portrét podle jejich role a lokace mají vlastní malou scenérii.
 Světová mapa dál vyznačuje polohu hráče a barvy frakcí. Jde o textovou grafiku
@@ -265,7 +276,8 @@ mají samostatné přehledy.
 ## Dobrodružství, úkoly a souboje
 
 Mapa, běžné questy, NPC linky a kampaň nabízejí cíle s různými podmínkami
-a odměnami. Deník úkolů ukazuje aktivní postup, kalendář zaznamenává události
+a odměnami. Deník úkolů ukazuje aktivní postup, historické milníky kampaně,
+rozhodnutí, která si NPC pamatují, a aktuální stav obou měst. Kalendář zaznamenává události
 a kronika uchovává důležité volby. Souboje jsou tahové; aréna přidává
 protivníky, postup a odměny. Postava může využívat dovednosti, vybavení,
 předměty a dostupnou bojovou podporu.

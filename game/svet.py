@@ -20,6 +20,14 @@ from data.mesta import (
 )
 from models.mafie import LOKACE_PODLE_UZEMI
 
+
+def _bezpecne_cele_cislo(hodnota):
+    try:
+        return int(hodnota)
+    except (TypeError, ValueError):
+        return 0
+
+
 BARVY_FRAKCI = {
     "policie": BLUE,
     "podsveti": MAGENTA,
@@ -1073,6 +1081,7 @@ class SvetSystem:
     odhalene_lokace: list = field(default_factory=lambda: list(VYCHOZI_ODHALENE))
     navstiveno: dict = field(default_factory=dict)
     vztahy_npc: dict = field(default_factory=lambda: {k: 0 for k in NPC})
+    pamet_rozhovoru: dict = field(default_factory=dict)
     lokacni_odmeny: dict = field(default_factory=dict)
     specializace_ctvrti: DistrictSpecializationSystem = field(default_factory=DistrictSpecializationSystem)
 
@@ -1102,6 +1111,21 @@ class SvetSystem:
                 hodnota = 0
             vztahy[npc_id] = max(-100, min(100, hodnota))
         self.vztahy_npc = vztahy
+        puvodni_pamet = (
+            self.pamet_rozhovoru if isinstance(self.pamet_rozhovoru, dict) else {}
+        )
+        self.pamet_rozhovoru = {}
+        for npc_id, zaznam in puvodni_pamet.items():
+            if npc_id not in NPC or not isinstance(zaznam, dict):
+                continue
+            self.pamet_rozhovoru[npc_id] = {
+                "pocet": max(0, _bezpecne_cele_cislo(zaznam.get("pocet", 0))),
+                "volba": zaznam.get("volba", "")[:120]
+                if isinstance(zaznam.get("volba", ""), str) else "",
+                "den": max(0, _bezpecne_cele_cislo(zaznam.get("den", 0))),
+                "lokace": zaznam.get("lokace", "")
+                if zaznam.get("lokace") in LOKACE else "",
+            }
         puvodni_odmeny = (
             self.lokacni_odmeny
             if isinstance(self.lokacni_odmeny, dict) else {}
@@ -1129,6 +1153,18 @@ class SvetSystem:
         if npc_id not in NPC:
             return False
         self.vztahy_npc[npc_id] = max(-100, min(100, self.vztahy_npc[npc_id] + delta))
+        return True
+
+    def zaznamenej_rozhovor(self, npc_id, volba, den):
+        if npc_id not in NPC or not isinstance(volba, str):
+            return False
+        predchozi = self.pamet_rozhovoru.get(npc_id, {})
+        self.pamet_rozhovoru[npc_id] = {
+            "pocet": max(0, _bezpecne_cele_cislo(predchozi.get("pocet", 0))) + 1,
+            "volba": volba[:120],
+            "den": max(0, _bezpecne_cele_cislo(den)),
+            "lokace": self.aktualni_lokace,
+        }
         return True
 
     def lokacni_odmena_dostupna(self, lokace_id, akce_id, den):
@@ -1536,6 +1572,8 @@ class SvetSystem:
         self.aktualni_lokace = cil
         self.navstiveno[cil] = self.navstiveno.get(cil, 0) + 1
         tisk_ok(f"Dorazil jsi do lokace: {LOKACE[cil]['nazev']}.")
+        if hra is not None and getattr(hra, "kampan", None):
+            hra.kampan.zkontroluj_postup(hra)
         zivy_svet = getattr(hra, "zivy_svet", None)
         postavy = getattr(zivy_svet, "postavy", ())
         pritomne = [
@@ -1638,6 +1676,7 @@ class SvetSystem:
             "odhalene_lokace": self.odhalene_lokace,
             "navstiveno": self.navstiveno,
             "vztahy_npc": self.vztahy_npc,
+            "pamet_rozhovoru": self.pamet_rozhovoru,
             "lokacni_odmeny": self.lokacni_odmeny,
             "specializace_ctvrti": self.specializace_ctvrti.to_dict(),
         }
@@ -1654,6 +1693,7 @@ class SvetSystem:
             odhalene_lokace=data.get("odhalene_lokace", VYCHOZI_ODHALENE),
             navstiveno=data.get("navstiveno", {}) if isinstance(data.get("navstiveno", {}), dict) else {},
             vztahy_npc=data.get("vztahy_npc", {}) if isinstance(data.get("vztahy_npc", {}), dict) else {},
+            pamet_rozhovoru=data.get("pamet_rozhovoru", {}) if isinstance(data.get("pamet_rozhovoru", {}), dict) else {},
             lokacni_odmeny=data.get("lokacni_odmeny", {}),
             specializace_ctvrti=DistrictSpecializationSystem.from_dict(specializace),
         )
@@ -1816,6 +1856,23 @@ class SvetSystem:
             return
         npc_id, npc = npc_v_lokaci[index]
         print(f"\n{npc['jmeno']}: {npc['popis']}")
+        pamet = self.pamet_rozhovoru.get(npc_id)
+        if pamet:
+            print(
+                f"{DIM}{npc['jmeno']} si pamatuje tvoji poslední volbu: "
+                f"{pamet['volba']}. Setkání: {pamet['pocet']}.{NC}"
+            )
+        if npc_id in ("mira", "radan"):
+            rozhodnuti = next(
+                (
+                    zaznam.get("volba") for zaznam in reversed(hra.kampan.volby)
+                    if isinstance(zaznam, dict)
+                    and zaznam.get("volba") in ("mira", "radan")
+                ),
+                None,
+            )
+            if rozhodnuti == npc_id:
+                print(f"{DIM}Vaše spojenectví z kampaně pořád ovlivňuje její důvěru.{NC}")
         vytiskni_volbu('1', '📜 Příběhový rozhovor & Větvení příběhu')
         vytiskni_volbu('2', '🤝 Požádat o službu')
         vytiskni_volbu('3', '⚒️ Nabídnout pomoc')
@@ -2335,6 +2392,14 @@ class SvetSystem:
                     hra.hrac.dark_energy + 8
                 )
                 tisk_ok(f"{npc['jmeno']} cítí tvou sílu a sklání hlavu (vztah +4, temná energie +8).")
+
+        vzpominky = {
+            "1": "naslouchání a nabídka spolupráce",
+            "2": "mocenské řešení",
+            "3": "vyjednávání o konkrétní dohodě",
+        }
+        if v in vzpominky:
+            self.zaznamenej_rozhovor(npc_id, vzpominky[v], hra.hrac.den)
 
         input("\nEnter...")
 

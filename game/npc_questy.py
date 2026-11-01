@@ -308,6 +308,11 @@ class NPCQuestSystem:
             self._udelej_nasledky(hra, var)
             self._zaznamenej_achievementy(hra, je_retezec)
             self._zapis_vysledek(hra, quest, npc_id, "temná")
+            hra.svet.zaznamenej_rozhovor(
+                npc_id,
+                f"dokončení úkolu «{quest['nazev']}» temnou cestou",
+                hra.hrac.den,
+            )
             return "temna"
         else:
             obtiznost = getattr(
@@ -321,6 +326,11 @@ class NPCQuestSystem:
             self._udelej_nasledky(hra, quest)
             self._zaznamenej_achievementy(hra, je_retezec)
             self._zapis_vysledek(hra, quest, npc_id, "čestná")
+            hra.svet.zaznamenej_rozhovor(
+                npc_id,
+                f"dokončení úkolu «{quest['nazev']}» čestnou cestou",
+                hra.hrac.den,
+            )
             return "normal"
 
     @staticmethod

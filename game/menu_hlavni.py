@@ -6,7 +6,7 @@ from config import (
     RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, GOLD, BOLD, NC, DIM,
 )
 from utils.vypis import ascii_art, banner_lokace, terminalni_obrazek, ukazatel
-from game.cile_hry import prehled_cilu
+from game.cile_hry import prehled_cilu, prehled_uvodu
 from game.tituly import dalsi_titul, hodnost, zaznamenej_povyseni
 from data.mesta import MESTA
 
@@ -197,6 +197,35 @@ def vykresli_hlavni_menu(hra):
         print(f"{GOLD}║{NC} {GREEN}➜ {radek}{NC}")
     print(f"{GOLD}{BOLD}╚{'═'*76}╝{NC}")
     print()
+
+    uvod = prehled_uvodu(hra)
+    if uvod["splneno"] < len(uvod["kroky"]):
+        print(
+            f"{CYAN}{BOLD}🎓 ÚVODNÍ CESTA {uvod['splneno']}/"
+            f"{len(uvod['kroky'])}{NC}"
+        )
+        for hotovo, nazev, _instrukce in uvod["kroky"]:
+            stav = "✓" if hotovo else "○"
+            barva = GREEN if hotovo else DIM
+            print(f"  {barva}{stav} {nazev}{NC}")
+        print()
+
+    milniky = getattr(hra.kampan, "milniky", [])
+    if milniky:
+        posledni_milnik = milniky[-1]
+        print(
+            f"{GOLD}✦ Poslední milník: {posledni_milnik.get('nazev', 'Kampaň')} "
+            f"— {posledni_milnik.get('odmena', '')}{NC}"
+        )
+    if hra.kampan.volby:
+        mesto = hra.zivy_svet.mesta.get("stare_mesto")
+        if mesto:
+            print(
+                f"{CYAN}Reakce Starého města: bezpečí {mesto.bezpeci}/100 · "
+                f"prosperita {mesto.prosperita}/100 · stabilita {mesto.stabilita}/100{NC}"
+            )
+    if milniky or hra.kampan.volby:
+        print()
 
     from game.denni_udalosti import prehled_pribehoveho_stavu
     stav_pribehu = prehled_pribehoveho_stavu(hra)
